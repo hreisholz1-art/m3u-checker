@@ -1,15 +1,14 @@
 import os
-import shutil
 import tempfile
 import zipfile
 import logging
-import asyncio  # ✅ HINZUGEFÜGT
+import asyncio
 from pathlib import Path
 from datetime import datetime
+from contextlib import asynccontextmanager
 
 import requests
-from fastapi import FastAPI, UploadFile, File, Request, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -46,12 +45,48 @@ if not GITHUB_TOKEN:
     logger.warning("GITHUB_TOKEN не найден — загрузка в релиз работать не будет")
 
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "change-me-very-secure-secret-2026")
-
 COMBINER_SCRIPT = "m3u_combiner_fixed.py"
 
-app = FastAPI(title="M3U Checker Bot 2026")
-
+# Глобальная переменная для Application
 application: Application = None
+
+
+# ────────────────────────────────────────────────
+#   LIFESPAN CONTEXT MANAGER (новый способ)
+# ────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Управление жизненным циклом приложения"""
+    global application
+    
+    # Startup
+    logger.info("🚀 Инициализация бота...")
+    application = Application.builder().token(BOT_TOKEN).build()
+    
+    # Инициализируем Application ✅
+    await application.initialize()
+    await application.start()
+    
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    
+    logger.info("✅ Бот инициализирован и запущен")
+    
+    yield  # Приложение работает
+    
+    # Shutdown
+    logger.info("🛑 Остановка бота...")
+    await application.stop()
+    await application.shutdown()
+    logger.info("✅ Бот остановлен")
+
+
+# ────────────────────────────────────────────────
+#   FASTAPI APP
+# ────────────────────────────────────────────────
+
+app = FastAPI(title="M3U Checker Bot 2026", lifespan=lifespan)
 
 
 # ────────────────────────────────────────────────
@@ -59,19 +94,17 @@ application: Application = None
 # ────────────────────────────────────────────────
 
 def upload_to_github_release(zip_path: Path, original_name: str = "result.zip") -> str | None:
-    """Загружает ZIP в релиз дня (тег vГГГГММДД) репозитория hreisholz1-art/m3u-checker"""
+    """Загружает ZIP в релиз дня"""
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
 
     api_base = f"https://api.github.com/repos/{REPO}"
-
     today = datetime.utcnow().strftime("%Y%m%d")
     tag_name = f"v{today}"
     release_name = f"Checked playlists — {today}"
 
-    # 1. Проверяем/создаём релиз дня
     upload_url = None
 
     try:
@@ -99,11 +132,9 @@ def upload_to_github_release(zip_path: Path, original_name: str = "result.zip") 
     if not upload_url:
         return None
 
-    # 2. Уникальное имя файла
     time_part = datetime.utcnow().strftime("%H%M")
     asset_name = f"m3u_checked_{today}_{time_part}.zip"
 
-    # 3. Загрузка
     try:
         upload_headers = {
             "Authorization": f"token {GITHUB_TOKEN}",
@@ -174,7 +205,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             output_m3u = tmp_dir / "good.m3u"
 
-            # ✅ Проверка наличия FFmpeg
+            # Проверка FFmpeg
             try:
                 ffmpeg_check = await asyncio.create_subprocess_exec(
                     "ffmpeg", "-version",
@@ -187,7 +218,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except FileNotFoundError:
                 await msg.edit_text(
                     "❌ FFmpeg не установлен на сервере!\n\n"
-                    "Свяжитесь с администратором для установки FFmpeg."
+                    "Свяжитесь с администратором."
                 )
                 return
 
@@ -238,7 +269,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await msg.edit_text(
                     "⚠️ Плейлист проверен, но не удалось загрузить на GitHub\n"
-                    "Попробуйте позже или напишите @админ"
+                    "Попробуйте позже"
                 )
 
     except Exception as e:
@@ -250,18 +281,16 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ────────────────────────────────────────────────
-#   FASTAPI
+#   FASTAPI ENDPOINTS
 # ────────────────────────────────────────────────
 
-@app.on_event("startup")
-async def startup():
-    global application
-    application = Application.builder().token(BOT_TOKEN).build()
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-
-    logger.info("Бот инициализирован")
+@app.get("/")
+async def root():
+    return {
+        "status": "running",
+        "bot": "M3U Checker Bot",
+        "version": "2026.1"
+    }
 
 
 @app.get("/health")
@@ -277,7 +306,10 @@ async def webhook(request: Request):
     try:
         update_dict = await request.json()
         update = Update.de_json(update_dict, application.bot)
-        await application.process_update(update)
+        
+        # ✅ Обрабатываем update правильно
+        await application.update_queue.put(update)
+        
         return {"ok": True}
     except Exception as e:
         logger.error("Webhook error", exc_info=True)
