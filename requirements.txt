@@ -1,0 +1,5 @@
+fastapi==0.115.4                # или новее
+uvicorn[standard]==0.32.0       # или новее
+python-telegram-bot==21.6       # ! важная версия 21.x на 2026 год
+python-dotenv==1.0.1
+python-multipart==0.0.18        # для UploadFile
