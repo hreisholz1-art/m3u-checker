@@ -1,6 +1,4 @@
-FROM python:3.11-slim
-
-# Установка системных зависимостей (совместимо с Debian trixie)
+# Устанавливаем системные зависимости для FFmpeg, OpenCV и Tesseract
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -15,20 +13,3 @@ RUN apt-get update && \
     libgomp1 \
     libxcb1 \
     && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Установка Python-зависимостей
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Копирование исходного кода
-COPY . .
-
-# Проверка установки (опционально)
-RUN ffmpeg -version && tesseract --version
-
-EXPOSE 8000
-
-# Запуск бота
-CMD ["python", "telegrambot2026.py"]
