@@ -1,5 +1,10 @@
-fastapi==0.115.*
-uvicorn[standard]
-python-telegram-bot==21.*
-python-dotenv
-requests
+python-telegram-bot==20.7
+aiohttp==3.9.1
+python-dotenv==1.0.1
+aiofiles==23.2.4
+fastapi==0.110.0
+uvicorn==0.29.0
+Pillow==10.2.0
+opencv-python-headless==4.9.0.80
+pytesseract==0.3.10
+requests==2.31.0
