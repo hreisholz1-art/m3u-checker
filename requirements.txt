@@ -8,5 +8,8 @@ Pillow==10.2.0
 opencv-python-headless==4.9.0.80
 pytesseract==0.3.10
 requests==2.31.0
+gspread==6.1.2
+oauth2client==4.1.3
+
 
 
