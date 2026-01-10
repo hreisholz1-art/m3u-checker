@@ -53,7 +53,7 @@ def load_wkn_json():
         with open("wkn.json.txt", "r", encoding="utf-8") as f:
             data = json.load(f)
         lookup = {}
-        for item in 
+        for item in data:
             name = item.get("name", "")
             logo = item.get("logo_url", "").strip()
             wkn = item.get("wkn", "").strip().upper()
