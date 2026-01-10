@@ -9,6 +9,7 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 import json
 import base64
+import traceback
 
 import requests
 from fastapi import FastAPI, Request, HTTPException
@@ -180,7 +181,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
         return
 
     # wkn123456 50euro
-    if match := re.fullmatch(r"wkn(\d+)\s+(\d+\.?\d*)\s*euro", text, re.IGNORECASE):
+    if match := re.fullmatch(r"wkn([a-zA-Z0-9]+)\s+(\d+\.?\d*)\s*euro", text, re.IGNORECASE):
         wkn, amount = match.groups()
         amount = float(amount)
         try:
@@ -202,6 +203,36 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             logger.error(f"wkn error: {e}")
         return
 
+# ─────────────── /divlog — ДИАГНОСТИКА ───────────────
+async def divlog_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
+        if not b64:
+            await update.message.reply_text("❌ GOOGLE_CREDENTIALS_BASE64 не задан")
+            return
+
+        creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
+        if "client_email" not in creds_dict:
+            await update.message.reply_text("❌ Неверный формат credentials.json")
+            return
+
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key("1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8").sheet1
+        value = sheet.acell("A1").value or "пусто"
+
+        await update.message.reply_text(
+            f"✅ Подключение успешно!\n"
+            f"Email: {creds_dict['client_email']}\n"
+            f"A1: {value}"
+        )
+
+    except Exception as e:
+        error_detail = traceback.format_exc()
+        msg = f"❌ Ошибка:\n\n{error_detail[-3900:]}"
+        await update.message.reply_text(msg)
+
 # ─────────────── FASTAPI ───────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -209,10 +240,14 @@ async def lifespan(app: FastAPI):
     application = Application.builder().token(BOT_TOKEN).build()
     await application.initialize()
     await application.start()
+    
+    # Регистрация хендлеров
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     application.add_handler(CommandHandler("mysecret", handle_hidden_commands))
+    application.add_handler(CommandHandler("divlog", divlog_debug))
+    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_hidden_commands))
+    
     logger.info("✅ Бот запущен")
     yield
     await application.stop()
