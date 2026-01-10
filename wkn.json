@@ -1,0 +1,823 @@
+[
+  {
+    "name": "BASF",
+    "ticker": "BAS",
+    "wkn": "DE000BASF111",
+    "isin": "DE000BASF111",
+    "shares": 442,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000BASF111.png"
+  },
+  {
+    "name": "BP",
+    "ticker": "BP.",
+    "wkn": "GB0007980591",
+    "isin": "GB0007980591",
+    "shares": 1325,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/GB0007980591.png"
+  },
+  {
+    "name": "RWE",
+    "ticker": "RWE",
+    "wkn": "DE0007037129",
+    "isin": "DE0007037129",
+    "shares": 105,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007037129.png"
+  },
+  {
+    "name": "Axa",
+    "ticker": "CS",
+    "wkn": "FR0000120628",
+    "isin": "FR0000120628",
+    "shares": 100,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/FR0000120628.png"
+  },
+  {
+    "name": "Meta Platforms",
+    "ticker": "META",
+    "wkn": "US30303M1027",
+    "isin": "US30303M1027",
+    "shares": 6.458,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US30303M1027.png"
+  },
+  {
+    "name": "KLOECK & Co",
+    "ticker": "KCO",
+    "wkn": "DE000KC01000",
+    "isin": "DE000KC01000",
+    "shares": 432.85,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000KC01000.png"
+  },
+  {
+    "name": "DEUTZ",
+    "ticker": "DEZ",
+    "wkn": "DE0006305006",
+    "isin": "DE0006305006",
+    "shares": 310,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0006305006.png"
+  },
+  {
+    "name": "Nvidia",
+    "ticker": "NVDA",
+    "wkn": "US67066G1040",
+    "isin": "US67066G1040",
+    "shares": 19,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US67066G1040.png"
+  },
+  {
+    "name": "Heidelberger Druck",
+    "ticker": "HDD",
+    "wkn": "DE0007314007",
+    "isin": "DE0007314007",
+    "shares": 1510,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007314007.png"
+  },
+  {
+    "name": "Hapag Lloyd",
+    "ticker": "HLAG",
+    "wkn": "DE000HLAG475",
+    "isin": "DE000HLAG475",
+    "shares": 24,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000HLAG475.png"
+  }
+]
+[
+  {
+    "name": "Enel",
+    "ticker": "ENEL",
+    "wkn": "IT0003128367",
+    "isin": "IT0003128367",
+    "shares": 300,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/IT0003128367.png"
+  },
+  {
+    "name": "E ON",
+    "ticker": "EOAN",
+    "wkn": "DE000ENAG999",
+    "isin": "DE000ENAG999",
+    "shares": 165,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000ENAG999.png"
+  },
+  {
+    "name": "Bayer",
+    "ticker": "BAYN",
+    "wkn": "DE000BAY0017",
+    "isin": "DE000BAY0017",
+    "shares": 61.5,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000BAY0017.png"
+  },
+  {
+    "name": "BMW",
+    "ticker": "BMW",
+    "wkn": "DE0005190003",
+    "isin": "DE0005190003",
+    "shares": 25.4,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0005190003.png"
+  },
+  {
+    "name": "Suedzucker",
+    "ticker": "SZU",
+    "wkn": "DE0007297004",
+    "isin": "DE0007297004",
+    "shares": 226,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007297004.png"
+  },
+  {
+    "name": "TUI",
+    "ticker": "TUI1",
+    "wkn": "DE000TUAG505",
+    "isin": "DE000TUAG505",
+    "shares": 200,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000TUAG505.png"
+  },
+  {
+    "name": "RTL Group",
+    "ticker": "RTLL",
+    "wkn": "LU0061462528",
+    "isin": "LU0061462528",
+    "shares": 51,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/LU0061462528.png"
+  },
+  {
+    "name": "Johnson&Johnson",
+    "ticker": "JNJ",
+    "wkn": "US4781601046",
+    "isin": "US4781601046",
+    "shares": 10,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US4781601046.png"
+  },
+  {
+    "name": "Quirin Bank",
+    "ticker": "QB7",
+    "wkn": "DE0005202303",
+    "isin": "DE0005202303",
+    "shares": 500,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0005202303.png"
+  },
+  {
+    "name": "British American Tobacco",
+    "ticker": "BATS",
+    "wkn": "GB0002875804",
+    "isin": "GB0002875804",
+    "shares": 35,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/GB0002875804.png"
+  },
+  {
+    "name": "KPN",
+    "ticker": "KPN",
+    "wkn": "NL0000009082",
+    "isin": "NL0000009082",
+    "shares": 416,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/NL0000009082.png"
+  },
+  {
+    "name": "Munich Re",
+    "ticker": "MUV2",
+    "wkn": "DE0008430026",
+    "isin": "DE0008430026",
+    "shares": 3,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0008430026.png"
+  }
+]
+[
+  {
+    "name": "Alexanderwerk",
+    "ticker": "ALXA",
+    "wkn": "DE000A37FTW0",
+    "isin": "DE000A37FTW0",
+    "shares": 110,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A37FTW0.png"
+  },
+  {
+    "name": "DWS Group",
+    "ticker": "DWS",
+    "wkn": "DE000DWS1007",
+    "isin": "DE000DWS1007",
+    "shares": 25,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000DWS1007.png"
+  },
+  {
+    "name": "Uni Credit",
+    "ticker": "UCG",
+    "wkn": "IT0005239360",
+    "isin": "IT0005239360",
+    "shares": 20,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/IT0005239360.png"
+  },
+  {
+    "name": "PJSC Gazprom ADR CDI",
+    "ticker": "OGZD",
+    "wkn": "US3682872078",
+    "isin": "US3682872078",
+    "shares": 238.31,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US3682872078.png"
+  },
+  {
+    "name": "RENK Group",
+    "ticker": "R3NK",
+    "wkn": "DE000RENK730",
+    "isin": "DE000RENK730",
+    "shares": 20.5,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000RENK730.png"
+  },
+  {
+    "name": "ERSTE STOCK BIOTEC R01 (T)",
+    "ticker": "IWTD",
+    "wkn": "AT0000746755",
+    "isin": "AT0000746755",
+    "shares": 2,
+    "type": "fund",
+    "logo_url": "https://assets.getquin.com/logos/AT0000746755.png"
+  },
+  {
+    "name": "AGCO",
+    "ticker": "AGCO",
+    "wkn": "US0010841023",
+    "isin": "US0010841023",
+    "shares": 12,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US0010841023.png"
+  },
+  {
+    "name": "iShares MSCI World Energy Sector ETF D",
+    "ticker": "WENS",
+    "wkn": "IE00BJ5JP105",
+    "isin": "IE00BJ5JP105",
+    "shares": 143.18,
+    "type": "etf",
+    "logo_url": "https://assets.getquin.com/logos/IE00BJ5JP105.png"
+  },
+  {
+    "name": "Sixt",
+    "ticker": "SIX2",
+    "wkn": "DE0007231326",
+    "isin": "DE0007231326",
+    "shares": 12,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007231326.png"
+  },
+  {
+    "name": "ING Group",
+    "ticker": "INGA",
+    "wkn": "NL0011821202",
+    "isin": "NL0011821202",
+    "shares": 35,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/NL0011821202.png"
+  },
+  {
+    "name": "Xiaomi",
+    "ticker": "1810",
+    "wkn": "KYG9830T1067",
+    "isin": "KYG9830T1067",
+    "shares": 200,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/KYG9830T1067.png"
+  },
+  {
+    "name": "Amazon",
+    "ticker": "AMZN",
+    "wkn": "US0231351067",
+    "isin": "US0231351067",
+    "shares": 3.607,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US0231351067.png"
+  },
+  {
+    "name": "VanEck Video Gaming and eSports ETF A",
+    "ticker": "ESGB",
+    "wkn": "IE00BYWQWR46",
+    "isin": "IE00BYWQWR46",
+    "shares": 12.85,
+    "type": "etf",
+    "logo_url": "https://assets.getquin.com/logos/IE00BYWQWR46.png"
+  },
+  {
+    "name": "Tesla",
+    "ticker": "TSLA",
+    "wkn": "US88160R1014",
+    "isin": "US88160R1014",
+    "shares": 1.876,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US88160R1014.png"
+  }
+]
+[
+  {
+    "name": "Henkel & KGAA Pref Shs",
+    "ticker": "HEN3",
+    "wkn": "DE0006048432",
+    "isin": "DE0006048432",
+    "shares": 10,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0006048432.png"
+  },
+  {
+    "name": "Siemens",
+    "ticker": "SIE",
+    "wkn": "DE0007236101",
+    "isin": "DE0007236101",
+    "shares": 2.508,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007236101.png"
+  },
+  {
+    "name": "Amundi STOXX Europe 600 Banks ETF",
+    "ticker": "INDA",
+    "wkn": "LU2082996112",
+    "isin": "LU2082996112",
+    "shares": 7.192,
+    "type": "etf",
+    "logo_url": "https://assets.getquin.com/logos/LU2082996112.png"
+  },
+  {
+    "name": "iShares $ EM Bond ETF",
+    "ticker": "IEMB",
+    "wkn": "IE00B2NPKV68",
+    "isin": "IE00B2NPKV68",
+    "shares": 6.918,
+    "type": "etf",
+    "logo_url": "https://assets.getquin.com/logos/IE00B2NPKV68.png"
+  },
+  {
+    "name": "Vonovia",
+    "ticker": "VNA",
+    "wkn": "DE000A1ML7J1",
+    "isin": "DE000A1ML7J1",
+    "shares": 20,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1ML7J1.png"
+  },
+  {
+    "name": "Lanxess",
+    "ticker": "LXS",
+    "wkn": "DE0005470405",
+    "isin": "DE0005470405",
+    "shares": 25.24,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0005470405.png"
+  },
+  {
+    "name": "Lyondell",
+    "ticker": "LYB",
+    "wkn": "NL0009434992",
+    "isin": "NL0009434992",
+    "shares": 10.55,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/NL0009434992.png"
+  },
+  {
+    "name": "Adidas",
+    "ticker": "ADS",
+    "wkn": "DE000A1EWWW0",
+    "isin": "DE000A1EWWW0",
+    "shares": 2.621,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1EWWW0.png"
+  },
+  {
+    "name": "Fuchs Pref Shs",
+    "ticker": "FPE3",
+    "wkn": "DE000A3E5D64",
+    "isin": "DE000A3E5D64",
+    "shares": 10.7,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A3E5D64.png"
+  },
+  {
+    "name": "A2A",
+    "ticker": "A2A",
+    "wkn": "IT0001233417",
+    "isin": "IT0001233417",
+    "shares": 160,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/IT0001233417.png"
+  },
+  {
+    "name": "Plug Power",
+    "ticker": "PLUG",
+    "wkn": "US72919P2020",
+    "isin": "US72919P2020",
+    "shares": 200,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US72919P2020.png"
+  },
+  {
+    "name": "Shell",
+    "ticker": "SHEL",
+    "wkn": "GB00BP6MXD84",
+    "isin": "GB00BP6MXD84",
+    "shares": 12.16,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/GB00BP6MXD84.png"
+  },
+  {
+    "name": "DroneShield",
+    "ticker": "DRO",
+    "wkn": "AU000000DRO2",
+    "isin": "AU000000DRO2",
+    "shares": 156.81,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/AU000000DRO2.png"
+  },
+  {
+    "name": "Sibanye Stillwater",
+    "ticker": "SSW",
+    "wkn": "ZAE000259701",
+    "isin": "ZAE000259701",
+    "shares": 101,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/ZAE000259701.png"
+  },
+  {
+    "name": "Splendid Med",
+    "ticker": "SPM",
+    "wkn": "DE0007279507",
+    "isin": "DE0007279507",
+    "shares": 259,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007279507.png"
+  },
+  {
+    "name": "ACATIS Datini Valueflex Fonds B",
+    "ticker": "WXIV",
+    "wkn": "DE000A1H72F1",
+    "isin": "DE000A1H72F1",
+    "shares": 1.226,
+    "type": "fund",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1H72F1.png"
+  },
+  {
+    "name": "FreeNet",
+    "ticker": "FNTN",
+    "wkn": "DE000A0Z2ZZ5",
+    "isin": "DE0000A0Z2ZZ5",
+    "shares": 6.744,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A0Z2ZZ5.png"
+  },
+  {
+    "name": "LUS BSK IXZT OE",
+    "ticker": "LUS",
+    "wkn": "DE000LS9PKB0",
+    "isin": "DE000LS9PKB0",
+    "shares": 1.092,
+    "type": "derivative",
+    "logo_url": "https://assets.getquin.com/logos/DE000LS9PKB0.png"
+  },
+  {
+    "name": "THE NAGA GROUP AG NA KONV",
+    "ticker": "N4G",
+    "wkn": "DE000A41YCM0",
+    "isin": "DE000A41YCM0",
+    "shares": 51.1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A41YCM0.png"
+  },
+  {
+    "name": "Yum! Brands",
+    "ticker": "YUM",
+    "wkn": "US9884981013",
+    "isin": "US9884981013",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US9884981013.png"
+  },
+  {
+    "name": "Stolberger",
+    "ticker": "SZI1",
+    "wkn": "DE0007279010",
+    "isin": "DE0007279010",
+    "shares": 1000,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007279010.png"
+  },
+  {
+    "name": "Northern Data",
+    "ticker": "NB2",
+    "wkn": "DE000A0SMU87",
+    "isin": "DE000A0SMU87",
+    "shares": 7,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A0SMU87.png"
+  },
+  {
+    "name": "Aap Implantate",
+    "ticker": "AAQ1",
+    "wkn": "DE000A3H2101",
+    "isin": "DE000A3H2101",
+    "shares": 60,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A3H2101.png"
+  },
+  {
+    "name": "q beyond",
+    "ticker": "QBY",
+    "wkn": "DE0005137004",
+    "isin": "DE0005137004",
+    "shares": 110,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0005137004.png"
+  },
+  {
+    "name": "New Wave Holding",
+    "ticker": "SPOR",
+    "wkn": "CA44486R1010",
+    "isin": "CA44486R1010",
+    "shares": 120,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/CA44486R1010.png"
+  },
+  {
+    "name": "Suss Microtec",
+    "ticker": "SMHN",
+    "wkn": "DE000A1K0235",
+    "isin": "DE000A1K0235",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1K0235.png"
+  },
+  {
+    "name": "Intershop Comm",
+    "ticker": "ISHA",
+    "wkn": "DE000A254211",
+    "isin": "DE000A254211",
+    "shares": 33,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A254211.png"
+  },
+  {
+    "name": "HERTZ GLOBAL HLDGS EQY WARRANT",
+    "ticker": "HTZWW",
+    "wkn": "US42804L2097",
+    "isin": "US42804L2097",
+    "shares": 9,
+    "type": "derivative",
+    "logo_url": "https://assets.getquin.com/logos/US42804L2097.png"
+  }
+]
+[
+  {
+    "name": "ACATIS Datini Valueflex Fonds B",
+    "ticker": "WXIV",
+    "wkn": "DE000A1H72F1",
+    "isin": "DE000A1H72F1",
+    "shares": 1.226,
+    "type": "fund",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1H72F1.png"
+  },
+  {
+    "name": "FreeNet",
+    "ticker": "FNTN",
+    "wkn": "DE000A0Z2ZZ5",
+    "isin": "DE000A0Z2ZZ5",
+    "shares": 6.744,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A0Z2ZZ5.png"
+  },
+  {
+    "name": "LUS BSK IXZT OE",
+    "ticker": "LUS",
+    "wkn": "DE000LS9PKB0",
+    "isin": "DE000LS9PKB0",
+    "shares": 1.092,
+    "type": "derivative",
+    "logo_url": "https://assets.getquin.com/logos/DE000LS9PKB0.png"
+  },
+  {
+    "name": "THE NAGA GROUP AG NA KONV",
+    "ticker": "N4G",
+    "wkn": "DE000A41YCM0",
+    "isin": "DE000A41YCM0",
+    "shares": 51.1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A41YCM0.png"
+  },
+  {
+    "name": "Yum! Brands",
+    "ticker": "YUM",
+    "wkn": "US9884981013",
+    "isin": "US9884981013",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US9884981013.png"
+  },
+  {
+    "name": "Stolberger",
+    "ticker": "SZI1",
+    "wkn": "DE0007279010",
+    "isin": "DE0007279010",
+    "shares": 1000,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0007279010.png"
+  },
+  {
+    "name": "Northern Data",
+    "ticker": "NB2",
+    "wkn": "DE000A0SMU87",
+    "isin": "DE000A0SMU87",
+    "shares": 7,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A0SMU87.png"
+  },
+  {
+    "name": "Aap Implantate",
+    "ticker": "AAQ1",
+    "wkn": "DE000A3H2101",
+    "isin": "DE000A3H2101",
+    "shares": 60,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A3H2101.png"
+  },
+  {
+    "name": "q beyond",
+    "ticker": "QBY",
+    "wkn": "DE0005137004",
+    "isin": "DE0005137004",
+    "shares": 110,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE0005137004.png"
+  },
+  {
+    "name": "New Wave Holding",
+    "ticker": "SPOR",
+    "wkn": "CA44486R1010",
+    "isin": "CA44486R1010",
+    "shares": 120,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/CA44486R1010.png"
+  },
+  {
+    "name": "Suss Microtec",
+    "ticker": "SMHN",
+    "wkn": "DE000A1K0235",
+    "isin": "DE000A1K0235",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A1K0235.png"
+  },
+  {
+    "name": "Intershop Comm",
+    "ticker": "ISHA",
+    "wkn": "DE000A254211",
+    "isin": "DE000A254211",
+    "shares": 33,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/DE000A254211.png"
+  },
+  {
+    "name": "HERTZ GLOBAL HLDGS EQY WARRANT",
+    "ticker": "HTZWW",
+    "wkn": "US42804L2097",
+    "isin": "US42804L2097",
+    "shares": 9,
+    "type": "derivative",
+    "logo_url": "https://assets.getquin.com/logos/US42804L2097.png"
+  },
+  {
+    "name": "Ecograf",
+    "ticker": "EGR",
+    "wkn": "AU0000071482",
+    "isin": "AU0000071482",
+    "shares": 100,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/AU0000071482.png"
+  },
+  {
+    "name": "MicroVision",
+    "ticker": "MVIS",
+    "wkn": "US5949724083",
+    "isin": "US5949724083",
+    "shares": 15,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US5949724083.png"
+  },
+  {
+    "name": "iRobot",
+    "ticker": "IRBT",
+    "wkn": "US4627681009",
+    "isin": "US4627681009",
+    "shares": 60,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US4627681009.png"
+  },
+  {
+    "name": "Northern Dyn",
+    "ticker": "NDM",
+    "wkn": "CA66510M2040",
+    "isin": "CA66510M2040",
+    "shares": 4,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/CA66510M2040.png"
+  },
+  {
+    "name": "Jaguar Mining",
+    "ticker": "JAG",
+    "wkn": "CA47009M8896",
+    "isin": "CA47009M8896",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/CA47009M8896.png"
+  },
+  {
+    "name": "Adx Energy",
+    "ticker": "ADX",
+    "wkn": "AU000000ADX9",
+    "isin": "AU000000ADX9",
+    "shares": 180,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/AU000000ADX9.png"
+  },
+  {
+    "name": "Virgin Galactic",
+    "ticker": "SPCE",
+    "wkn": "US92766K1060",
+    "isin": "US92766K1060",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US92766K1060.png"
+  },
+  {
+    "name": "Tianbao Holdings Ltd.",
+    "ticker": "3TB1",
+    "wkn": "BMG887252085",
+    "isin": "BMG887252085",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/BMG887252085.png"
+  }
+]
+[
+  {
+    "name": "Immune Pharma",
+    "ticker": "FZRQ",
+    "wkn": "US45262C1062",
+    "isin": "US45262C1062",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US45262C1062.png"
+  },
+  {
+    "name": "Nel",
+    "ticker": "NEL",
+    "wkn": "NO0010081235",
+    "isin": "NO0010081235",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/NO0010081235.png"
+  },
+  {
+    "name": "Netcents Tech",
+    "ticker": "NC",
+    "wkn": "CA64112G1054",
+    "isin": "CA64112G1054",
+    "shares": 2120,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/CA64112G1054.png"
+  },
+  {
+    "name": "Rosneft Oil Company GDR",
+    "ticker": "ROSN",
+    "wkn": "US67812M2070",
+    "isin": "US67812M2070",
+    "shares": 1,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US67812M2070.png"
+  },
+  {
+    "name": "Sberbank Russia Sponsored ADR representing 4",
+    "ticker": "SBRCY",
+    "wkn": "US80585Y3080",
+    "isin": "US80585Y3080",
+    "shares": 101,
+    "type": "stock",
+    "logo_url": "https://assets.getquin.com/logos/US80585Y3080.png"
+  }
+]
+
