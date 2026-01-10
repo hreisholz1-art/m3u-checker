@@ -3,14 +3,12 @@ import tempfile
 import zipfile
 import logging
 import asyncio
-import re
 from pathlib import Path
 from datetime import datetime
 from contextlib import asynccontextmanager
 import json
 import base64
 import traceback
-
 import requests
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
@@ -44,6 +42,25 @@ if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN не задан")
 
 application: Application = None
+
+# ─────────────── ЗАГРУЗКА WKN JSON ───────────────
+WKN_DATA = {}
+
+def load_wkn_json():
+    global WKN_DATA
+    try:
+        with open("wkn.json.txt", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data:
+                wkn = item.get("wkn", "").upper()
+                if wkn:
+                    WKN_DATA[wkn] = {
+                        "name": item.get("name", f"WKN{wkn}"),
+                        "logo": item.get("logo_url", "")
+                    }
+        logger.info(f"Загружено {len(WKN_DATA)} записей из wkn.json.txt")
+    except Exception as e:
+        logger.error(f"Ошибка загрузки wkn.json.txt: {e}")
 
 # ─────────────── GOOGLE SHEETS ───────────────
 COLORS = [
@@ -135,7 +152,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
 
-    # /mysecret
     if text == "/mysecret":
         await update.message.reply_text(
             "🔐 Скрытые команды:\n\n"
@@ -154,9 +170,9 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             sh.duplicate_sheet(sh.sheet1.id, insert_sheet_index=1, new_sheet_name=year)
             sheet = sh.worksheet(year)
             sheet.clear()
-            sheet.update("A1:D2", [
-                ["Дата", "WKN", "Акция", "Сумма (€)"],
-                ["", "", "", "=SUM(D3:D1000)"]
+            sheet.update("A1:E2", [
+                ["Дата", "Логотип", "WKN", "Акция", "Сумма (€)"],
+                ["", "", "", "", "=SUM(E3:E1000)"]
             ])
             await update.message.reply_text(f"🆕 Лист {year} создан")
         except Exception as e:
@@ -166,7 +182,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
     # del02.06
     if match := re.fullmatch(r"del(\d{2})\.(\d{2})", text, re.IGNORECASE):
         day, month = match.groups()
-        target = f"{datetime.now().year}-{month}-{day}"
+        target = f"{day}.{month}.2025"  # ← формат даты как в таблице
         try:
             sheet = _get_spreadsheet().sheet1
             rows = sheet.get_all_values()
@@ -174,7 +190,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             for i in sorted(to_del, reverse=True):
                 sheet.delete_rows(i)
             last = max(3, len(sheet.get_all_values()))
-            sheet.update("D2", f"=SUM(D3:D{last})")
+            sheet.update("E2", f"=SUM(E3:E{last})")
             await update.message.reply_text(f"🗑️ Удалено {len(to_del)} записей за {day}.{month}")
         except Exception as e:
             logger.error(f"del error: {e}")
@@ -186,18 +202,29 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
         amount = float(amount)
         try:
             sheet = _get_spreadsheet().sheet1
-            next_row = len(sheet.get_all_values()) + 1
-            if next_row < 3:
-                next_row = 3
-            sheet.update(f"A{next_row}", [[
-                datetime.now().strftime("%Y-%m-%d"),
-                wkn,
-                f"WKN{wkn}",
-                amount
-            ]])
+            rows = sheet.get_all_values()
+            last_row = len(rows)
+            if last_row < 2:
+                last_row = 2
+
+            data_row = last_row + 1
+            sum_row = data_row + 1
+
+            # Дата в формате 10.01.2025
+            date_str = datetime.now().strftime("%d.%m.%Y")
+
+            # Ищем в JSON
+            stock_info = WKN_DATA.get(wkn.upper(), {})
+            stock_name = stock_info.get("name", f"WKN{wkn}")
+            logo_url = stock_info.get("logo", "")
+
+            # Записываем: A=дата, B=логотип, C=WKN, D=название, E=сумма
+            sheet.update(f"A{data_row}", [[date_str, logo_url, wkn, stock_name, amount]])
+
             color = get_color_for_wkn(wkn)
-            sheet.format(f"A{next_row}:D{next_row}", {"backgroundColor": color})
-            sheet.update("D2", f"=SUM(D3:D{next_row})")
+            sheet.format(f"A{data_row}:E{data_row}", {"backgroundColor": color})
+            sheet.update(f"E{sum_row}", f"=SUM(E3:E{data_row})")
+
             await update.message.reply_text("✅ Готово!")
         except Exception as e:
             logger.error(f"wkn error: {e}")
@@ -237,11 +264,11 @@ async def divlog_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global application
+    load_wkn_json()  # ← загружаем JSON при старте
     application = Application.builder().token(BOT_TOKEN).build()
     await application.initialize()
     await application.start()
     
-    # Регистрация хендлеров
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("mysecret", handle_hidden_commands))
     application.add_handler(CommandHandler("divlog", divlog_debug))
