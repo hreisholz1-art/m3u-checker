@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 import json
 import base64
 import traceback
+import re
 import requests
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Update
@@ -51,13 +52,18 @@ def load_wkn_json():
     try:
         with open("wkn.json.txt", "r", encoding="utf-8") as f:
             data = json.load(f)
-            for item in data:
-                wkn = item.get("wkn", "").upper()
-                if wkn:
-                    WKN_DATA[wkn] = {
-                        "name": item.get("name", f"WKN{wkn}"),
-                        "logo": item.get("logo_url", "")
-                    }
+        lookup = {}
+        for item in 
+            name = item.get("name", "")
+            logo = item.get("logo_url", "").strip()
+            wkn = item.get("wkn", "").strip().upper()
+            isin = item.get("isin", "").strip().upper()
+
+            if wkn:
+                lookup[wkn] = {"name": name, "logo": logo}
+            if isin:
+                lookup[isin] = {"name": name, "logo": logo}
+        WKN_DATA = lookup
         logger.info(f"Загружено {len(WKN_DATA)} записей из wkn.json.txt")
     except Exception as e:
         logger.error(f"Ошибка загрузки wkn.json.txt: {e}")
@@ -182,7 +188,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
     # del02.06
     if match := re.fullmatch(r"del(\d{2})\.(\d{2})", text, re.IGNORECASE):
         day, month = match.groups()
-        target = f"{day}.{month}.2025"  # ← формат даты как в таблице
+        target = f"{day}.{month}.2025"
         try:
             sheet = _get_spreadsheet().sheet1
             rows = sheet.get_all_values()
@@ -196,11 +202,28 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             logger.error(f"del error: {e}")
         return
 
-    # wkn123456 50euro
-    if match := re.fullmatch(r"wkn([a-zA-Z0-9]+)\s+(\d+\.?\d*)\s*euro", text, re.IGNORECASE):
-        wkn, amount = match.groups()
-        amount = float(amount)
+    # wkn... или isin...
+    match = re.fullmatch(
+        r"(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?P<amount>\d+\.?\d*)\s*euro",
+        text,
+        re.IGNORECASE
+    )
+    if match:
+        prefix = match.group("prefix").lower()
+        code = match.group("code").upper()
+        amount = float(match.group("amount"))
+
         try:
+            stock_info = WKN_DATA.get(code)
+            if stock_info:
+                stock_name = stock_info["name"]
+                logo_url = stock_info["logo"]
+                real_code = code
+            else:
+                stock_name = f"{prefix.upper()}{code}"
+                logo_url = ""
+                real_code = code
+
             sheet = _get_spreadsheet().sheet1
             rows = sheet.get_all_values()
             last_row = len(rows)
@@ -209,25 +232,16 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
 
             data_row = last_row + 1
             sum_row = data_row + 1
-
-            # Дата в формате 10.01.2025
             date_str = datetime.now().strftime("%d.%m.%Y")
 
-            # Ищем в JSON
-            stock_info = WKN_DATA.get(wkn.upper(), {})
-            stock_name = stock_info.get("name", f"WKN{wkn}")
-            logo_url = stock_info.get("logo", "")
-
-            # Записываем: A=дата, B=логотип, C=WKN, D=название, E=сумма
-            sheet.update(f"A{data_row}", [[date_str, logo_url, wkn, stock_name, amount]])
-
-            color = get_color_for_wkn(wkn)
+            sheet.update(f"A{data_row}", [[date_str, logo_url, real_code, stock_name, amount]])
+            color = get_color_for_wkn(real_code)
             sheet.format(f"A{data_row}:E{data_row}", {"backgroundColor": color})
             sheet.update(f"E{sum_row}", f"=SUM(E3:E{data_row})")
 
             await update.message.reply_text("✅ Готово!")
         except Exception as e:
-            logger.error(f"wkn error: {e}")
+            logger.error(f"wkn/isin error: {e}")
         return
 
 # ─────────────── /divlog — ДИАГНОСТИКА ───────────────
@@ -264,7 +278,7 @@ async def divlog_debug(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global application
-    load_wkn_json()  # ← загружаем JSON при старте
+    load_wkn_json()
     application = Application.builder().token(BOT_TOKEN).build()
     await application.initialize()
     await application.start()
