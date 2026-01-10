@@ -84,7 +84,7 @@ def load_wkn_json():
             data = json.load(f)
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        for item in 
+        for item in data:
             name = item.get("name", "")
             logo = item.get("logo_url", "").strip()
             wkn = item.get("wkn", "").strip().upper()
