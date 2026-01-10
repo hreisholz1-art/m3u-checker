@@ -155,14 +155,14 @@ def delete_dividends_by_date(date: str, year: int = None):
     return deleted
 
 def generate_excel(year: int = None):
-    """Генерация Excel файла с дивидендами"""
+    """Генерация Excel файла с дивидендами (БЕЗ колонки с логотипами)"""
     if year is None:
         year = datetime.now().year
     
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        SELECT date, logo_url, wkn, name, amount 
+        SELECT date, wkn, name, amount 
         FROM dividends 
         WHERE year = ? 
         ORDER BY date
@@ -174,11 +174,11 @@ def generate_excel(year: int = None):
     ws = wb.active
     ws.title = str(year)
     
-    # Заголовки
-    headers = ["Дата", "Логотип", "WKN", "Акция", "Сумма (€)"]
+    # Заголовки (БЕЗ "Логотип")
+    headers = ["Дата", "WKN", "Акция", "Сумма (€)"]
     ws.append(headers)
     
-    # Цвета для разных WKN
+    # Цвета для разных WKN (одинаковые для одного WKN!)
     colors = [
         "FFCCCC", "CCFFCC", "CCCCFF", "FFFFCC", "CCFFFF",
         "FFCCFF", "FFE6CC", "E6CCFF", "CCE6FF", "FFCCAA"
@@ -191,32 +191,31 @@ def generate_excel(year: int = None):
         ws.append(row_data)
         current_row += 1
         
-        # Цвет для WKN
-        wkn = row_data[2]
+        # Цвет для WKN (одинаковый цвет для одного WKN)
+        wkn = row_data[1]  # WKN теперь во 2-й колонке
         if wkn not in wkn_colors:
             wkn_colors[wkn] = colors[len(wkn_colors) % len(colors)]
         
         fill = PatternFill(start_color=wkn_colors[wkn], end_color=wkn_colors[wkn], fill_type="solid")
-        for col in range(1, 6):
+        for col in range(1, 5):  # A-D (4 колонки)
             ws.cell(row=current_row, column=col).fill = fill
     
     # Строка с суммой
     sum_row = current_row + 1
     ws[f"A{sum_row}"] = "ИТОГО"
-    ws[f"E{sum_row}"] = f"=SUM(E2:E{current_row})"
+    ws[f"D{sum_row}"] = f"=SUM(D2:D{current_row})"
     
-    # Форматирование
-    for col in range(1, 6):
+    # Форматирование суммы
+    for col in range(1, 5):
         ws.cell(row=sum_row, column=col).fill = PatternFill(
             start_color="FFFF00", end_color="FFFF00", fill_type="solid"
         )
     
     # Ширина колонок
     ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 50
-    ws.column_dimensions['C'].width = 12
-    ws.column_dimensions['D'].width = 40
-    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 40
+    ws.column_dimensions['D'].width = 12
     
     # Сохранение
     output_path = Path(f"dividends_{year}.xlsx")
@@ -245,30 +244,36 @@ def _get_spreadsheet():
     client = gspread.authorize(creds)
     return client.open_by_key("1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8")
 
-def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float, logo_url: str = ""):
-    """Добавить дивиденд в Google Sheets"""
+def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float):
+    """Добавить дивиденд в Google Sheets (без колонки с логотипами)"""
     try:
         sheet = _get_spreadsheet().sheet1
         rows = sheet.get_all_values()
-        last_row = len(rows)
-        if last_row < 2:
-            last_row = 2
-
-        data_row = last_row + 1
-        sum_row = data_row + 1
-
-        sheet.update(f"A{data_row}", [[date, logo_url, wkn, name, amount]])
         
-        # Цвет
+        # Найти последнюю заполненную строку (пропуская пустые)
+        last_data_row = 2  # Начинаем с 3-й строки (после заголовков)
+        for i, row in enumerate(rows[2:], start=3):
+            if any(cell.strip() for cell in row[:4]):  # Если есть данные в A-D
+                last_data_row = i
+        
+        # Новая строка данных
+        new_row = last_data_row + 1
+        sum_row = new_row + 1
+        
+        # Вставляем данные (БЕЗ колонки с логотипами)
+        sheet.update(f"A{new_row}:D{new_row}", [[date, wkn, name, amount]])
+        
+        # Цвет (одинаковый для одного WKN)
         color = get_color_for_wkn(wkn)
-        sheet.format(f"A{data_row}:E{data_row}", {"backgroundColor": color})
+        sheet.format(f"A{new_row}:D{new_row}", {"backgroundColor": color})
         
-        # Формула суммы
-        sheet.update(f"E{sum_row}", f"=SUM(E3:E{data_row})")
+        # ВАЖНО: Обновляем формулу суммы
+        sheet.update(f"D{sum_row}", f"=SUM(D3:D{new_row})")
         
+        logger.info(f"✅ Добавлено в Sheets: строка {new_row}, сумма в D{sum_row}")
         return True
     except Exception as e:
-        logger.error(f"Ошибка добавления в Google Sheets: {e}")
+        logger.error(f"❌ Ошибка добавления в Google Sheets: {e}", exc_info=True)
         return False
 
 def delete_from_sheets(date: str):
@@ -276,18 +281,33 @@ def delete_from_sheets(date: str):
     try:
         sheet = _get_spreadsheet().sheet1
         rows = sheet.get_all_values()
+        
+        # Найти строки для удаления (начиная с 3-й строки)
         to_del = [i+1 for i, r in enumerate(rows[2:], start=3) if r and r[0] == date]
         
+        if not to_del:
+            return 0
+        
+        # Удаляем строки (с конца, чтобы индексы не сбивались)
         for i in sorted(to_del, reverse=True):
             sheet.delete_rows(i)
         
-        # Обновить формулу суммы
-        last = max(3, len(sheet.get_all_values()))
-        sheet.update("E2", f"=SUM(E3:E{last})")
+        # Найти последнюю строку с данными после удаления
+        updated_rows = sheet.get_all_values()
+        last_data_row = 2
+        for i, row in enumerate(updated_rows[2:], start=3):
+            if any(cell.strip() for cell in row[:4]):
+                last_data_row = i
         
+        sum_row = last_data_row + 1
+        
+        # Обновить формулу суммы
+        sheet.update(f"D{sum_row}", f"=SUM(D3:D{last_data_row})")
+        
+        logger.info(f"✅ Удалено из Sheets: {len(to_del)} записей, сумма в D{sum_row}")
         return len(to_del)
     except Exception as e:
-        logger.error(f"Ошибка удаления из Google Sheets: {e}")
+        logger.error(f"❌ Ошибка удаления из Google Sheets: {e}", exc_info=True)
         return 0
 
 # ─────────────── TELEGRAM ХЕНДЛЕРЫ ───────────────
@@ -424,13 +444,14 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             sh.duplicate_sheet(sh.sheet1.id, insert_sheet_index=1, new_sheet_name=year)
             sheet = sh.worksheet(year)
             sheet.clear()
-            sheet.update("A1:E2", [
-                ["Дата", "Логотип", "WKN", "Акция", "Сумма (€)"],
-                ["", "", "", "", "=SUM(E3:E1000)"]
+            # БЕЗ колонки с логотипами
+            sheet.update("A1:D2", [
+                ["Дата", "WKN", "Акция", "Сумма (€)"],
+                ["", "", "", "=SUM(D3:D1000)"]
             ])
             await update.message.reply_text(f"🆕 Лист {year} создан в Google Sheets")
         except Exception as e:
-            logger.error(f"new error: {e}")
+            logger.error(f"new error: {e}", exc_info=True)
             await update.message.reply_text("❌ Ошибка создания листа")
         return
 
@@ -479,13 +500,14 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             # Добавить в БД
             add_dividend_to_db(date_str, code, stock_name, amount, logo_url, year)
             
-            # Добавить в Google Sheets
-            sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount, logo_url)
+            # Добавить в Google Sheets (БЕЗ logo_url)
+            sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount)
             
-            status = "✅ Добавлено в БД и Sheets" if sheets_ok else "⚠️ Добавлено в БД (Sheets недоступен)"
+            status_icon = "✅" if sheets_ok else "⚠️"
+            status_text = "БД + Sheets" if sheets_ok else "только БД (Sheets ошибка)"
             
             await update.message.reply_text(
-                f"{status}\n"
+                f"{status_icon} Добавлено: {status_text}\n"
                 f"📅 {date_str}\n"
                 f"🏢 {stock_name}\n"
                 f"💶 {amount}€"
