@@ -1,668 +1,146 @@
 import os
-import tempfile
-import zipfile
 import logging
-import asyncio
-import sqlite3
-from pathlib import Path
-from datetime import datetime
 from contextlib import asynccontextmanager
-import json
-import base64
-import traceback
-import re
-
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, Response
 from telegram import Update
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    MessageHandler,
-    filters,
-    ContextTypes,
-)
-from dotenv import load_dotenv
-import requests
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Google Sheets
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import m3u_handler
+import finance_handler
 
-# Excel generation
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill
-
-# ─────────────── ЛОГИРОВАНИЕ ───────────────
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+# ===== КОНФИГУРАЦИЯ =====
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ─────────────── КОНФИГ ───────────────
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "change-me-very-secure-secret-2026")
-COMBINER_SCRIPT = "m3u_combiner_fixed.py"
+TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "very-secret")
 
-if not BOT_TOKEN:
-    raise ValueError("BOT_TOKEN не задан")
-
-application: Application = None
-
-# ─────────────── ЛОКАЛЬНАЯ БД ───────────────
-DB_PATH = Path("dividends.db")
-
-def init_db():
-    """Инициализация SQLite базы данных"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS dividends (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            wkn TEXT NOT NULL,
-            name TEXT NOT NULL,
-            amount REAL NOT NULL,
-            logo_url TEXT,
-            year INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS wkn_lookup (
-            code TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            logo_url TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-    logger.info("✅ База данных инициализирована")
-
-def load_wkn_json():
-    """Загрузка WKN данных из JSON в SQLite"""
-    try:
-        if not Path("wkn.json.txt").exists():
-            logger.warning("wkn.json.txt не найден - пропускаем загрузку")
-            return
-            
-        with open("wkn.json.txt", "r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        count = 0
-        for item in data:
-            name = item.get("name", "")
-            logo = item.get("logo_url", "").strip()
-            wkn = item.get("wkn", "").strip().upper()
-            isin = item.get("isin", "").strip().upper()
-            
-            if wkn:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name, logo_url) VALUES (?, ?, ?)",
-                         (wkn, name, logo))
-                count += 1
-            if isin:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name, logo_url) VALUES (?, ?, ?)",
-                         (isin, name, logo))
-                count += 1
-        
-        conn.commit()
-        conn.close()
-        logger.info(f"✅ Загружено {count} записей из wkn.json.txt")
-    except Exception as e:
-        logger.error(f"Ошибка загрузки wkn.json.txt: {e}")
-
-def get_wkn_info(code: str):
-    """Получить информацию о WKN/ISIN из базы"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT name, logo_url FROM wkn_lookup WHERE code = ?", (code.upper(),))
-    result = c.fetchone()
-    conn.close()
-    
-    if result:
-        return {"name": result[0], "logo": result[1]}
-    return None
-
-def add_dividend_to_db(date: str, wkn: str, name: str, amount: float, logo_url: str = "", year: int = None):
-    """Добавить запись о дивиденде в локальную БД"""
-    if year is None:
-        year = datetime.now().year
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO dividends (date, wkn, name, amount, logo_url, year)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (date, wkn, name, amount, logo_url, year))
-    conn.commit()
-    conn.close()
-
-def delete_dividends_by_date(date: str, year: int = None):
-    """Удалить записи по дате из БД"""
-    if year is None:
-        year = datetime.now().year
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM dividends WHERE date = ? AND year = ?", (date, year))
-    deleted = c.rowcount
-    conn.commit()
-    conn.close()
-    return deleted
-
-def generate_excel(year: int = None):
-    """Генерация Excel файла с дивидендами (БЕЗ колонки с логотипами)"""
-    if year is None:
-        year = datetime.now().year
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
-        SELECT date, wkn, name, amount 
-        FROM dividends 
-        WHERE year = ? 
-        ORDER BY date
-    """, (year,))
-    rows = c.fetchall()
-    conn.close()
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = str(year)
-    
-    # Заголовки (БЕЗ "Логотип")
-    headers = ["Дата", "WKN", "Акция", "Сумма (€)"]
-    ws.append(headers)
-    
-    # Цвета для разных WKN (одинаковые для одного WKN!)
-    colors = [
-        "FFCCCC", "CCFFCC", "CCCCFF", "FFFFCC", "CCFFFF",
-        "FFCCFF", "FFE6CC", "E6CCFF", "CCE6FF", "FFCCAA"
-    ]
-    wkn_colors = {}
-    
-    # Данные
-    current_row = 2
-    for row_data in rows:
-        ws.append(row_data)
-        current_row += 1
-        
-        # Цвет для WKN (одинаковый цвет для одного WKN)
-        wkn = row_data[1]  # WKN теперь во 2-й колонке
-        if wkn not in wkn_colors:
-            wkn_colors[wkn] = colors[len(wkn_colors) % len(colors)]
-        
-        fill = PatternFill(start_color=wkn_colors[wkn], end_color=wkn_colors[wkn], fill_type="solid")
-        for col in range(1, 5):  # A-D (4 колонки)
-            ws.cell(row=current_row, column=col).fill = fill
-    
-    # Строка с суммой
-    sum_row = current_row + 1
-    ws[f"A{sum_row}"] = "ИТОГО"
-    ws[f"D{sum_row}"] = f"=SUM(D2:D{current_row})"
-    
-    # Форматирование суммы
-    for col in range(1, 5):
-        ws.cell(row=sum_row, column=col).fill = PatternFill(
-            start_color="FFFF00", end_color="FFFF00", fill_type="solid"
-        )
-    
-    # Ширина колонок
-    ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 12
-    ws.column_dimensions['C'].width = 40
-    ws.column_dimensions['D'].width = 12
-    
-    # Сохранение
-    output_path = Path(f"dividends_{year}.xlsx")
-    wb.save(output_path)
-    return output_path
-
-# ─────────────── GOOGLE SHEETS ───────────────
-COLORS = [
-    {"red": 1.0, "green": 0.9, "blue": 0.9},
-    {"red": 0.9, "green": 1.0, "blue": 0.9},
-    {"red": 0.9, "green": 0.9, "blue": 1.0},
-    {"red": 1.0, "green": 1.0, "blue": 0.9},
-    {"red": 0.9, "green": 1.0, "blue": 1.0},
-]
-
-def get_color_for_wkn(wkn: str):
-    return COLORS[hash(wkn) % len(COLORS)]
-
-def _get_spreadsheet():
-    b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
-    if not b64:
-        raise ValueError("GOOGLE_CREDENTIALS_BASE64 не задан")
-    creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
-    return client.open_by_key("1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8")
-
-def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float):
-    """Добавить дивиденд в Google Sheets (без колонки с логотипами)"""
-    try:
-        sheet = _get_spreadsheet().sheet1
-        rows = sheet.get_all_values()
-        
-        # Найти последнюю заполненную строку (пропуская пустые)
-        last_data_row = 2  # Начинаем с 3-й строки (после заголовков)
-        for i, row in enumerate(rows[2:], start=3):
-            if any(cell.strip() for cell in row[:4]):  # Если есть данные в A-D
-                last_data_row = i
-        
-        # Новая строка данных
-        new_row = last_data_row + 1
-        sum_row = new_row + 1
-        
-        # Вставляем данные (БЕЗ колонки с логотипами)
-        sheet.update(f"A{new_row}:D{new_row}", [[date, wkn, name, amount]])
-        
-        # Цвет (одинаковый для одного WKN)
-        color = get_color_for_wkn(wkn)
-        sheet.format(f"A{new_row}:D{new_row}", {"backgroundColor": color})
-        
-        # ВАЖНО: Обновляем формулу суммы
-        sheet.update(f"D{sum_row}", f"=SUM(D3:D{new_row})")
-        
-        logger.info(f"✅ Добавлено в Sheets: строка {new_row}, сумма в D{sum_row}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Ошибка добавления в Google Sheets: {e}", exc_info=True)
-        return False
-
-def delete_from_sheets(date: str):
-    """Удалить записи из Google Sheets по дате"""
-    try:
-        sheet = _get_spreadsheet().sheet1
-        rows = sheet.get_all_values()
-        
-        # Найти строки для удаления (начиная с 3-й строки)
-        to_del = [i+1 for i, r in enumerate(rows[2:], start=3) if r and r[0] == date]
-        
-        if not to_del:
-            return 0
-        
-        # Удаляем строки (с конца, чтобы индексы не сбивались)
-        for i in sorted(to_del, reverse=True):
-            sheet.delete_rows(i)
-        
-        # Найти последнюю строку с данными после удаления
-        updated_rows = sheet.get_all_values()
-        last_data_row = 2
-        for i, row in enumerate(updated_rows[2:], start=3):
-            if any(cell.strip() for cell in row[:4]):
-                last_data_row = i
-        
-        sum_row = last_data_row + 1
-        
-        # Обновить формулу суммы
-        sheet.update(f"D{sum_row}", f"=SUM(D3:D{last_data_row})")
-        
-        logger.info(f"✅ Удалено из Sheets: {len(to_del)} записей, сумма в D{sum_row}")
-        return len(to_del)
-    except Exception as e:
-        logger.error(f"❌ Ошибка удаления из Google Sheets: {e}", exc_info=True)
-        return 0
-
-# ─────────────── TELEGRAM ХЕНДЛЕРЫ ───────────────
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ===== ТЕЛЕГРАМ ХЕНДЛЕРЫ =====
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /start"""
     await update.message.reply_text(
         "👋 Привет!\n\n"
-        "📺 Пришли .m3u/.m3u8/.txt файл — проверю потоки\n"
-        "💰 Скрытые команды: /mysecret"
+        "📁 **M3U Обработчик**\n"
+        "   → Отправь файл .m3u/.m3u8/.txt\n"
+        "   → Я проверю все потоки и верну рабочие\n\n"
+        "📈 **Финансовый трекер**\n"
+        "   → `wkn123456 45.50euro` - добавить дивиденд\n"
+        "   → `del02.06` - удалить записи за дату\n"
+        "   → `/mysecret` - показать все команды"
     )
 
-async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle only document uploads (M3U files)"""
-    document = update.message.document
-    if not document:
-        await update.message.reply_text("Пришли файл.")
+async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Маршрутизатор текстовых сообщений"""
+    if not update.message or not update.message.text:
         return
-
-    name = (document.file_name or "").lower()
-    if not any(name.endswith(ext) for ext in ('.m3u', '.m3u8', '.txt', '.text')):
-        await update.message.reply_text("Поддерживаются: .m3u, .m3u8, .txt")
-        return
-
-    msg = await update.message.reply_text("📥 Скачиваю...")
     
-    try:
-        with tempfile.TemporaryDirectory() as tmp_str:
-            tmp = Path(tmp_str)
-            input_path = tmp / "input.m3u"
-            
-            # Скачивание файла
-            file = await document.get_file()
-            await file.download_to_drive(custom_path=str(input_path))
-
-            await msg.edit_text("🔍 Проверяю потоки... (3–20 мин)")
-
-            # Проверка FFmpeg
-            try:
-                proc = await asyncio.create_subprocess_exec(
-                    "ffmpeg", "-version",
-                    stdout=asyncio.subprocess.DEVNULL,
-                    stderr=asyncio.subprocess.DEVNULL
-                )
-                await proc.communicate()
-                if proc.returncode != 0:
-                    raise FileNotFoundError("FFmpeg error")
-            except Exception as e:
-                logger.error(f"FFmpeg check failed: {e}")
-                await msg.edit_text("❌ FFmpeg не установлен на сервере")
-                return
-
-            output_m3u = tmp / "good.m3u"
-            
-            # Запуск скрипта проверки
-            cmd = [
-                "python3", COMBINER_SCRIPT, 
-                str(tmp), 
-                "-w", "4", 
-                "-t", "15", 
-                "-o", str(output_m3u)
-            ]
-            
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
-            
-            stdout, stderr = await proc.communicate()
-            
-            if proc.returncode != 0:
-                error_msg = stderr.decode('utf-8', errors='ignore')[:500]
-                logger.error(f"Combiner error: {error_msg}")
-                await msg.edit_text(f"❌ Ошибка обработки:\n{error_msg}")
-                return
-
-            if not output_m3u.exists() or output_m3u.stat().st_size < 200:
-                await msg.edit_text("❌ Не найдено рабочих потоков")
-                return
-
-            # Создание ZIP
-            zip_name = f"m3u_{datetime.now().strftime('%Y%m%d_%H%M')}.zip"
-            zip_path = tmp / zip_name
-            
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.write(output_m3u, "good.m3u")
-
-            # Отправка
-            file_size = zip_path.stat().st_size
-            if file_size > 50 * 1024 * 1024:
-                await msg.edit_text("❌ Файл >50 МБ — слишком большой для отправки")
-                return
-            
-            await msg.edit_text("📤 Отправляю результат...")
-            
-            with open(zip_path, "rb") as f:
-                await update.message.reply_document(
-                    document=f,
-                    filename=zip_name,
-                    caption=f"✅ Готово! Размер: {file_size / 1024:.1f} KB"
-                )
-            
-            await msg.delete()
-
-    except Exception as e:
-        logger.exception("Критическая ошибка при обработке плейлиста")
-        try:
-            await msg.edit_text(f"💥 Ошибка: {str(e)[:200]}")
-        except:
-            await update.message.reply_text("💥 Ошибка обработки файла")
-
-# ─────────────── FINANCE HANDLER FÜR TEXT ───────────────
-async def handle_finance_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle all text messages that could be finance commands"""
     text = update.message.text.strip()
     
-    # /mysecret - показать команды
-    if text == "/mysecret":
+    # Финансовые команды имеют приоритет
+    response = await finance_handler.handle_finance_command(text)
+    
+    if response:
+        # Финансовая команда обработана
+        await update.message.reply_html(response)
+    elif text == "/mysecret":
+        # Явный вызов команды /mysecret
         await update.message.reply_text(
-            "🔐 Скрытые команды:\n\n"
-            "• <code>wkn123456 45.50euro</code> — добавить дивиденд\n"
-            "• <code>isinDE00012345 30euro</code> — добавить по ISIN\n"
-            "• <code>del02.06</code> — удалить записи за 2 июня\n"
-            "• <code>new27</code> — создать лист на 2027 год\n"
-            "• <code>/divxlsx</code> — скачать Excel\n"
-            "• <code>/divlog</code> — последние записи\n"
-            "• <code>/divdebug</code> — тест Google Sheets",
+            "🔐 **Скрытые команды:**\n\n"
+            "• <code>wkn123456 45.50euro</code> - добавить дивиденд\n"
+            "• <code>isinDE00012345 30euro</code> - добавить по ISIN\n"
+            "• <code>del02.06</code> - удалить записи за 2 июня\n"
+            "• <code>/mysecret</code> - показать эту справку\n\n"
+            "📁 **M3U обработка:**\n"
+            "• Просто отправь файл .m3u/.m3u8/.txt",
             parse_mode="HTML"
         )
-        return
-
-    # new27 - создать новый год в Sheets
-    if match := re.fullmatch(r"new(\d{2})", text, re.IGNORECASE):
-        year = f"20{match.group(1)}"
-        try:
-            sh = _get_spreadsheet()
-            sh.duplicate_sheet(sh.sheet1.id, insert_sheet_index=1, new_sheet_name=year)
-            sheet = sh.worksheet(year)
-            sheet.clear()
-            # БЕЗ колонки с логотипами
-            sheet.update("A1:D2", [
-                ["Дата", "WKN", "Акция", "Сумма (€)"],
-                ["", "", "", "=SUM(D3:D1000)"]
-            ])
-            await update.message.reply_text(f"🆕 Лист {year} создан в Google Sheets")
-        except Exception as e:
-            logger.error(f"new error: {e}", exc_info=True)
-            await update.message.reply_text("❌ Ошибка создания листа")
-        return
-
-    # del02.06 - удалить записи по дате
-    if match := re.fullmatch(r"del(\d{2})\.(\d{2})", text, re.IGNORECASE):
-        day, month = match.groups()
-        target = f"{day}.{month}.{datetime.now().year}"
-        
-        # Удалить из БД
-        deleted_db = delete_dividends_by_date(target)
-        
-        # Удалить из Sheets
-        deleted_sheets = delete_from_sheets(target)
-        
+    else:
+        # Неизвестная текстовая команда
         await update.message.reply_text(
-            f"🗑️ Удалено:\n"
-            f"📊 БД: {deleted_db}\n"
-            f"📈 Sheets: {deleted_sheets}"
-        )
-        return
-
-    # wkn123456 45.50euro или isin... 30euro
-    match = re.fullmatch(
-        r"(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?P<amount>\d+\.?\d*)\s*euro",
-        text,
-        re.IGNORECASE
-    )
-    if match:
-        code = match.group("code").upper()
-        amount = float(match.group("amount"))
-
-        try:
-            # Поиск в базе
-            stock_info = get_wkn_info(code)
-            
-            if stock_info:
-                stock_name = stock_info["name"]
-                logo_url = stock_info["logo"]
-            else:
-                stock_name = f"WKN{code}"
-                logo_url = ""
-
-            date_str = datetime.now().strftime("%d.%m.%Y")
-            year = datetime.now().year
-            
-            # Добавить в БД
-            add_dividend_to_db(date_str, code, stock_name, amount, logo_url, year)
-            
-            # Добавить в Google Sheets (БЕЗ logo_url)
-            sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount)
-            
-            status_icon = "✅" if sheets_ok else "⚠️"
-            status_text = "БД + Sheets" if sheets_ok else "только БД (Sheets ошибка)"
-            
-            await update.message.reply_text(
-                f"{status_icon} Добавлено: {status_text}\n"
-                f"📅 {date_str}\n"
-                f"🏢 {stock_name}\n"
-                f"💶 {amount}€"
-            )
-        except Exception as e:
-            logger.error(f"Ошибка добавления дивиденда: {e}", exc_info=True)
-            await update.message.reply_text("❌ Ошибка при добавлении")
-        return
-    
-    # Wenn es keine Finance-Kommand ist, zeige Hilfe
-    await update.message.reply_text(
-        "ℹ️ Ich kann:\n"
-        "• 📁 M3U Dateien verarbeiten\n"
-        "• 📈 Finance-Tracking (z.B. wknCODE 100euro)\n"
-        "• 📊 /mysecret für alle Befehle"
-    )
-
-# /divxlsx - скачать Excel
-async def download_excel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        year = datetime.now().year
-        xlsx_path = generate_excel(year)
-        
-        with open(xlsx_path, "rb") as f:
-            await update.message.reply_document(
-                document=f,
-                filename=f"dividends_{year}.xlsx",
-                caption=f"📊 Дивиденды за {year} год"
-            )
-        
-        xlsx_path.unlink()  # Удалить временный файл
-    except Exception as e:
-        logger.error(f"Ошибка генерации Excel: {e}")
-        await update.message.reply_text("❌ Ошибка при создании файла")
-
-# /divlog - показать последние записи
-async def show_log(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("""
-            SELECT date, wkn, name, amount 
-            FROM dividends 
-            WHERE year = ? 
-            ORDER BY created_at DESC 
-            LIMIT 10
-        """, (datetime.now().year,))
-        rows = c.fetchall()
-        conn.close()
-        
-        if not rows:
-            await update.message.reply_text("📭 Записей нет")
-            return
-        
-        text = "📋 Последние 10 записей:\n\n"
-        total = 0
-        for date, wkn, name, amount in rows:
-            text += f"• {date} | {wkn} | {name} | {amount}€\n"
-            total += amount
-        
-        text += f"\n💰 Сумма: {total:.2f}€"
-        await update.message.reply_text(text)
-        
-    except Exception as e:
-        logger.error(f"Ошибка показа логов: {e}")
-        await update.message.reply_text("❌ Ошибка")
-
-# /divdebug - диагностика Google Sheets
-async def divdebug(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
-        if not b64:
-            await update.message.reply_text("❌ GOOGLE_CREDENTIALS_BASE64 не задан")
-            return
-
-        creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
-        if "client_email" not in creds_dict:
-            await update.message.reply_text("❌ Неверный формат credentials.json")
-            return
-
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        client = gspread.authorize(creds)
-        sheet = client.open_by_key("1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8").sheet1
-        value = sheet.acell("A1").value or "пусто"
-
-        await update.message.reply_text(
-            f"✅ Google Sheets подключен!\n"
-            f"Email: {creds_dict['client_email']}\n"
-            f"A1: {value}"
+            "ℹ️ Я могу:\n"
+            "• Обрабатывать M3U файлы (отправь файл)\n"
+            "• Вести учёт дивидендов (например: wkn123456 100euro)\n"
+            "• Показать все команды: /mysecret"
         )
 
-    except Exception as e:
-        error_detail = traceback.format_exc()
-        msg = f"❌ Ошибка:\n\n{error_detail[-3900:]}"
-        await update.message.reply_text(msg)
-
-# ─────────────── FASTAPI ───────────────
+# ===== FASTAPI LIFESPAN =====
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global application
+    """Управление жизненным циклом приложения"""
+    # Инициализация бота
+    bot_app = Application.builder().token(TOKEN).build()
+    
+    # ВАЖНО: Порядок имеет значение!
+    # 1. Сначала команды
+    bot_app.add_handler(CommandHandler("start", start_command))
+    bot_app.add_handler(CommandHandler("mysecret", text_router))  # Обрабатывается в text_router
+    
+    # 2. Затем текстовые сообщения (финансовые команды)
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    
+    # 3. В конце документы (M3U файлы)
+    bot_app.add_handler(MessageHandler(filters.Document.ALL, m3u_handler.process_m3u_document))
     
     # Инициализация
-    init_db()
-    load_wkn_json()
+    await bot_app.initialize()
+    await bot_app.start()
     
-    application = Application.builder().token(BOT_TOKEN).build()
-    await application.initialize()
-    await application.start()
+    # Сохраняем в состоянии приложения
+    app.state.tg_app = bot_app
     
-    # WICHTIG: Korrekte Handler-Order!
-    # 1. Zuerst Command Handler
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("mysecret", handle_finance_text))
-    application.add_handler(CommandHandler("divxlsx", download_excel))
-    application.add_handler(CommandHandler("divlog", show_log))
-    application.add_handler(CommandHandler("divdebug", divdebug))
-    
-    # 2. Dann Document Handler (nur für M3U Dateien)
-    application.add_handler(MessageHandler(filters.Document.ALL, handle_document))
-    
-    # 3. Zuletzt Text Handler für alle anderen Text-Nachrichten
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_finance_text))
-    
-    logger.info("✅ Бот запущен")
+    logger.info("✅ Бот запущен успешно")
     yield
     
-    # Shutdown
-    await application.stop()
-    await application.shutdown()
+    # Завершение работы
+    logger.info("🛑 Завершение работы бота...")
+    await bot_app.stop()
+    await bot_app.shutdown()
 
-app = FastAPI(title="M3U + Dividends Bot 2026", lifespan=lifespan)
-
-@app.get("/")
-async def root():
-    return {"status": "running", "bot": "M3U + Dividends", "version": "2026.1"}
-
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
+# ===== FASTAPI APP =====
+app = FastAPI(
+    title="Telegram Bot 2026",
+    description="M3U Processor & Finance Tracker",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
 @app.post(f"/webhook/{WEBHOOK_SECRET}")
 async def webhook(request: Request):
-    if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != WEBHOOK_SECRET:
-        raise HTTPException(403, "Forbidden")
-    
+    """Webhook endpoint для Telegram"""
     try:
-        update = Update.de_json(await request.json(), application.bot)
-        await application.update_queue.put(update)
-        return {"ok": True}
+        data = await request.json()
+        update = Update.de_json(data, app.state.tg_app.bot)
+        await app.state.tg_app.process_update(update)
+        return Response(status_code=200)
     except Exception as e:
-        logger.error("Webhook error", exc_info=True)
-        raise HTTPException(500, str(e))
+        logger.error(f"Webhook error: {e}")
+        return Response(status_code=500)
+
+@app.get("/health")
+async def health_check():
+    """Health check для мониторинга"""
+    return {
+        "status": "healthy",
+        "service": "telegram-bot-2026",
+        "components": {
+            "bot": "initialized",
+            "m3u_handler": "ready",
+            "finance_handler": "ready"
+        }
+    }
+
+@app.get("/")
+async def root():
+    """Корневой эндпоинт"""
+    return {
+        "service": "Telegram Bot 2026",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "webhook": f"/webhook/{WEBHOOK_SECRET}",
+            "docs": "/docs"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
