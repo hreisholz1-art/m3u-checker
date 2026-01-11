@@ -5,35 +5,33 @@ from fastapi import FastAPI, Request, Response
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Unsere isolierten Module
-import m3u_handler
-import finance_handler
+import m3u_handler  # Твоя стабильная часть
+import finance_handler # Наша финансовая логика
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "default_secret")
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "very-secret")
 
 async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Routet Textnachrichten an die Finanz-Logik."""
+    """Маршрутизатор текстовых сообщений [cite: 26]"""
     if not update.message or not update.message.text:
         return
     
-    # Finanz-Check (Pattern Matching passiert intern im Handler)
+    # Пытаемся обработать как финансовую команду [cite: 13, 26]
     response = await finance_handler.handle_finance_command(update.message.text)
     if response:
         await update.message.reply_html(response)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Setup Application
+    # Инициализация бота 
     bot_app = Application.builder().token(TOKEN).build()
     
-    # Handlers registrieren
-    bot_app.add_handler(CommandHandler("start", lambda u, c: u.message.reply_text("Bot aktiv.")))
-    bot_app.add_handler(MessageHandler(filters.Document.ALL, m3u_handler.process_m3u_document))
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    bot_app.add_handler(CommandHandler("start", lambda u, c: u.message.reply_text("Бот запущен."))) [cite: 5]
+    bot_app.add_handler(MessageHandler(filters.Document.ALL, m3u_handler.process_m3u_document)) [cite: 6, 26]
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router)) [cite: 26]
     
     await bot_app.initialize()
     await bot_app.start()
@@ -46,12 +44,8 @@ app = FastAPI(lifespan=lifespan)
 
 @app.post(f"/webhook/{WEBHOOK_SECRET}")
 async def webhook(request: Request):
-    token = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    if token != WEBHOOK_SECRET:
-        return Response(status_code=403)
-    
     data = await request.json()
-    await app.state.tg_app.process_update(Update.de_json(data, app.state.tg_app.bot))
+    await app.state.tg_app.process_update(Update.de_json(data, app.state.tg_app.bot)) [cite: 27]
     return Response(status_code=200)
 
 @app.get("/health")
