@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости
+# System dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -13,21 +13,19 @@ RUN apt-get update && \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Устанавливаем Python-зависимости
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код
-COPY . .
-
-# Проверка установки (опционально)
-RUN ffmpeg -version && tesseract --version
+# Copy application code (exclude development files)
+COPY *.py ./
 
 EXPOSE 8000
 
-# Запуск бота
-CMD ["python", "telegrambot2026.py"]
+# Start with Gunicorn (Render's recommended production server)
+CMD ["gunicorn", "telegrambot2026:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "--timeout", "120", "--access-logfile", "-"]
