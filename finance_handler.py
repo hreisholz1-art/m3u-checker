@@ -3,175 +3,130 @@ import re
 import json
 import base64
 import logging
-import hashlib
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 logger = logging.getLogger(__name__)
 
-# Google Sheet ID (Hardcoded wie gewünscht)
+# Konfiguration
 SHEET_ID = "1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8"
+WKN_JSON_PATH = "wkn.json.txt"
 
-# Regex Pattern
+# Regex Patterns [cite: 14, 16, 18]
 PATTERN_HELP = re.compile(r"^/mysecret$")
-PATTERN_WKN = re.compile(r"^wkn(\w+)\s+([\d.,]+)euro$", re.IGNORECASE)
-PATTERN_DEL = re.compile(r"^del(\d{2}\.\d{2})$", re.IGNORECASE)
+PATTERN_WKN = re.compile(r"^(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?P<amount>\d+\.?\d*)\s*euro", re.IGNORECASE)
+PATTERN_DEL = re.compile(r"^del(\d{2})\.(\d{2})$", re.IGNORECASE)
 PATTERN_NEW = re.compile(r"^new(\d{2})$", re.IGNORECASE)
 
+# Palette aus deinem Originalcode [cite: 4]
 COLORS = [
-    {"red": 0.8, "green": 0.9, "blue": 1.0},  # Hellblau
-    {"red": 0.9, "green": 1.0, "blue": 0.8},  # Hellgrün
-    {"red": 1.0, "green": 0.9, "blue": 0.9},  # Hellrot
-    {"red": 1.0, "green": 1.0, "blue": 0.8},  # Gelb
-    {"red": 0.9, "green": 0.8, "blue": 1.0},  # Lila
+    {"red": 1.0, "green": 0.9, "blue": 0.9},
+    {"red": 0.9, "green": 1.0, "blue": 0.9},
+    {"red": 0.9, "green": 0.9, "blue": 1.0},
+    {"red": 1.0, "green": 1.0, "blue": 0.9},
+    {"red": 0.9, "green": 1.0, "blue": 1.0},
 ]
 
-def get_gspread_client():
-    """Authentifiziert sich bei Google mit Env-Var."""
+def load_stock_info(code):
+    """Lädt Namen aus der wkn.json.txt[cite: 2, 3]."""
     try:
-        creds_b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
-        if not creds_b64:
-            logger.error("GOOGLE_CREDENTIALS_BASE64 fehlt.")
-            return None
-        
-        creds_json = json.loads(base64.b64decode(creds_b64).decode('utf-8'))
-        scope = [
-            "https://spreadsheets.google.com/feeds",
-            "https://www.googleapis.com/auth/drive"
-        ]
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_json, scope)
+        if os.path.exists(WKN_JSON_PATH):
+            with open(WKN_JSON_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for item in data:
+                    if item.get("wkn", "").upper() == code or item.get("isin", "").upper() == code:
+                        return item.get("name")
+    except Exception as e:
+        logger.error(f"Fehler beim Laden der WKN-Daten: {e}")
+    return None
+
+def get_gspread_client():
+    try:
+        b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64") # [cite: 5]
+        if not b64: return None
+        creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         return gspread.authorize(creds)
     except Exception as e:
-        logger.error(f"Google Auth Fehler: {e}")
+        logger.error(f"Auth Fehler: {e}")
         return None
 
-def _get_spreadsheet(client):
-    try:
-        return client.open_by_key(SHEET_ID)
-    except Exception as e:
-        logger.error(f"Spreadsheet Error: {e}")
-        return None
-
-def handle_finance_command(text: str) -> str | None:
-    """
-    Analysiert den Text. Wenn ein Finanz-Muster passt, führe Aktion aus.
-    Gibt Antwort-String zurück oder None, wenn kein Match.
-    """
+async def handle_finance_command(text: str) -> str | None:
     text = text.strip()
 
-    # 1. Hilfe
+    # 1. Hilfe [cite: 14]
     if PATTERN_HELP.fullmatch(text):
         return (
-            "<b>Versteckte Befehle:</b>\n"
-            "<code>wkn123456 45.50euro</code> - Zeile hinzufügen\n"
-            "<code>del02.06</code> - Löscht Zeilen (Tag.Monat)\n"
-            "<code>new27</code> - Neues Blatt '2027' erstellen"
+            "🔐 <b>Versteckte Befehle:</b>\n\n"
+            "• <code>wkn123456 45.50euro</code> - Eintrag hinzufügen\n"
+            "• <code>del02.06</code> - Löscht Einträge vom 2. Juni\n"
+            "• <code>new27</code> - Neues Blatt für 2027"
         )
 
     client = get_gspread_client()
-    if not client:
-        return None  # Silent fail
+    if not client: return None
+    sh = client.open_by_key(SHEET_ID)
 
-    # 2. WKN Eintrag: wkn123456 45.50euro
-    match_wkn = PATTERN_WKN.fullmatch(text)
-    if match_wkn:
+    # 2. WKN/ISIN Eintrag (OHNE LOGO) [cite: 19, 22]
+    if match := PATTERN_WKN.fullmatch(text):
         try:
-            wkn = match_wkn.group(1).upper()
-            amount_str = match_wkn.group(2).replace(',', '.')
-            amount = float(amount_str)
+            code = match.group("code").upper()
+            amount = float(match.group("amount"))
+            stock_name = load_stock_info(code) or f"Aktie {code}"
             
-            sh = _get_spreadsheet(client)
-            ws = sh.sheet1  # Standardmäßig das erste Blatt oder nach Jahr wählen
+            ws = sh.sheet1
+            date_str = datetime.now().strftime("%d.%m.%Y")
             
-            # Farbe berechnen
-            color_idx = hash(wkn) % len(COLORS)
-            bg_color = COLORS[color_idx]
+            # Neue Zeile: [Datum, WKN, Name, Betrag]
+            row_data = [date_str, code, stock_name, amount]
+            ws.append_row(row_data, value_input_option="USER_ENTERED")
             
-            today_str = datetime.now().strftime("%Y-%m-%d")
-            
-            # Zeile vorbereiten: [Datum, WKN_RAW, "WKN...", Betrag]
-            row_data = [today_str, wkn, f"WKN{wkn}", amount]
-            
-            # Einfügen (Append)
-            ws.append_row(row_data)
-            
-            # Formatierung der letzten Zeile holen
+            # Formatierung 
             last_row = len(ws.get_all_values())
+            color = COLORS[hash(code) % len(COLORS)]
+            ws.format(f"A{last_row}:D{last_row}", {"backgroundColor": color})
             
-            # Farbe setzen (gspread format)
-            fmt = {"backgroundColor": bg_color}
-            ws.format(f"A{last_row}:D{last_row}", fmt)
-            
-            # Formel aktualisieren in D2
-            ws.update_acell("D2", f"=SUM(D3:D{max(1000, last_row)})")
-            
-            return f"✅ Gespeichert: {wkn} - {amount:.2f}€"
+            # Summe in D2 aktualisieren 
+            ws.update_acell("D2", f"=SUM(D3:D{max(100, last_row)})")
+            return f"✅ Gebucht: {stock_name} ({amount}€)"
         except Exception as e:
             logger.error(f"WKN Error: {e}")
             return None
 
-    # 3. Löschen: del02.06
-    match_del = PATTERN_DEL.fullmatch(text)
-    if match_del:
+    # 3. Löschen [cite: 17, 18]
+    if match := PATTERN_DEL.fullmatch(text):
         try:
-            date_part = match_del.group(1)
-            current_year = datetime.now().year
-            target_date = f"{current_year}-{date_part.split('.')[1]}-{date_part.split('.')[0]}" # YYYY-MM-DD
-            
-            sh = _get_spreadsheet(client)
+            day, month = match.groups()
+            target = f"{day}.{month}.{datetime.now().year}"
             ws = sh.sheet1
-            
             rows = ws.get_all_values()
-            # Finde Indizes (von unten nach oben löschen, um Index-Verschiebung zu vermeiden)
-            to_delete = []
-            for i, row in enumerate(rows):
-                if i < 2: continue # Header skip
-                if row[0] == target_date:
-                    to_delete.append(i + 1) # gspread ist 1-basiert
             
-            for idx in reversed(to_delete):
-                ws.delete_rows(idx)
-                
-            if to_delete:
-                # Formel update
-                ws.update_acell("D2", f"=SUM(D3:D1000)")
-                return f"🗑️ {len(to_delete)} Zeilen vom {target_date} gelöscht."
-            return "Keine Einträge für dieses Datum gefunden."
+            to_del = [i+1 for i, r in enumerate(rows) if len(r) > 0 and r[0] == target]
+            for i in sorted(to_del, reverse=True):
+                ws.delete_rows(i)
+            
+            ws.update_acell("D2", "=SUM(D3:D1000)")
+            return f"🗑️ {len(to_del)} Einträge für {target} gelöscht."
         except Exception as e:
-            logger.error(f"Delete Error: {e}")
+            logger.error(f"Del Error: {e}")
             return None
 
-    # 4. Neues Jahr: new27
-    match_new = PATTERN_NEW.fullmatch(text)
-    if match_new:
+    # 4. Neues Blatt [cite: 15]
+    if match := PATTERN_NEW.fullmatch(text):
+        year = f"20{match.group(1)}"
         try:
-            year_short = match_new.group(1)
-            new_sheet_name = f"20{year_short}"
-            
-            sh = _get_spreadsheet(client)
-            
-            try:
-                # Versuche existierendes zu holen oder Fehler werfen
-                sh.worksheet(new_sheet_name)
-                return f"Blatt {new_sheet_name} existiert bereits."
-            except:
-                pass # Existiert nicht, gut.
-
-            # Duplizieren des ersten Blattes als Template
-            sh.sheet1.duplicate(new_sheet_name=new_sheet_name)
-            new_ws = sh.worksheet(new_sheet_name)
-            
-            # Inhalt leeren (ab Zeile 3), Header behalten
-            all_rows = len(new_ws.get_all_values())
-            if all_rows > 2:
-                new_ws.batch_clear([f"A3:D{all_rows}"])
-            
-            new_ws.update_acell("D2", "=SUM(D3:D1000)")
-            
-            return f"📅 Blatt '{new_sheet_name}' erfolgreich erstellt."
+            sh.duplicate_sheet(sh.sheet1.id, new_sheet_name=year)
+            ws = sh.worksheet(year)
+            ws.clear()
+            ws.update("A1:D2", [
+                ["Datum", "WKN", "Aktie", "Summe (€)"],
+                ["", "", "", "=SUM(D3:D1000)"]
+            ])
+            return f"📅 Blatt {year} wurde erstellt."
         except Exception as e:
-            logger.error(f"New Sheet Error: {e}")
+            logger.error(f"New Error: {e}")
             return None
 
     return None
