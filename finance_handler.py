@@ -9,15 +9,14 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 logger = logging.getLogger(__name__)
 
-# Konfiguration - Hier dürfen keine Zitate oder Klammern am Ende stehen
+# ID таблицы из твоего кода
 SHEET_ID = "1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8"
 WKN_JSON_PATH = "wkn.json.txt"
 
-# Regex Patterns
+# Регулярные выражения
 PATTERN_HELP = re.compile(r"^/mysecret$")
 PATTERN_WKN = re.compile(r"^(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?P<amount>\d+\.?\d*)\s*euro", re.IGNORECASE)
 PATTERN_DEL = re.compile(r"^del(\d{2})\.(\d{2})$", re.IGNORECASE)
-PATTERN_NEW = re.compile(r"^new(\d{2})$", re.IGNORECASE)
 
 COLORS = [
     {"red": 1.0, "green": 0.9, "blue": 0.9},
@@ -36,13 +35,14 @@ def load_stock_info(code):
                     if item.get("wkn", "").upper() == code or item.get("isin", "").upper() == code:
                         return item.get("name")
     except Exception as e:
-        logger.error(f"Error loading WKN: {e}")
+        logger.error(f"Error loading WKN JSON: {e}")
     return None
 
 def get_client():
     try:
         b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
-        if not b64: return None
+        if not b64:
+            return None
         creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
@@ -55,14 +55,11 @@ async def handle_finance_command(text: str) -> str | None:
     text_clean = text.strip()
 
     if PATTERN_HELP.fullmatch(text_clean):
-        msg = "🔐 <b>Команды:</b>\n"
-        msg += "<code>wkn123456 45.50euro</code>\n"
-        msg += "<code>del02.06</code>\n"
-        msg += "<code>new27</code>"
-        return msg
+        return "🔐 <b>Команды:</b>\n<code>wkn123456 45.50euro</code>\n<code>del02.06</code>"
 
     client = get_client()
-    if not client: return None
+    if not client:
+        return None
     
     try:
         sh = client.open_by_key(SHEET_ID)
@@ -82,6 +79,7 @@ async def handle_finance_command(text: str) -> str | None:
             color = COLORS[hash(code) % len(COLORS)]
             ws.format(f"A{last_row}:D{last_row}", {"backgroundColor": color})
             
+            # Сумма в C1, данные в столбце D
             ws.update_acell("C1", "=SUM(D2:D1000)")
             return f"✅ Записано: <b>{stock_name}</b> ({amount} €)"
 
