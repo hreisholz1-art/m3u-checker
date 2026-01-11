@@ -57,9 +57,15 @@ async def handle_finance_command(text: str) -> str | None:
     if PATTERN_HELP.fullmatch(text_clean):
         return "🔐 <b>Команды:</b>\n<code>wkn123456 45.50euro</code>\n<code>del02.06</code>"
 
+    # Sofortige Antwort, wenn es keine Finanz-Befehle sind
+    if not (PATTERN_WKN.fullmatch(text_clean) or PATTERN_DEL.fullmatch(text_clean)):
+        return None
+    
     client = get_client()
     if not client:
-        return None
+        return "⚠️ Google Sheets ist nicht konfiguriert. Bitte GOOGLE_CREDENTIALS_BASE64 setzen."
+    
+    # Rest des Codes bleibt gleich...
     
     try:
         sh = client.open_by_key(SHEET_ID)
