@@ -1,13 +1,20 @@
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+.env
+.venv
 env/
 venv/
-.env
-.git
-.gitignore
-*.md
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 .DS_Store
+.git/
 *.log
+temp_*
+test_*
+local.py  # Wichtig: Nicht in Production container kopieren!
