@@ -9,7 +9,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 logger = logging.getLogger(__name__)
 
-# Konfiguration
+# Konfiguration [cite: 5, 24]
 SHEET_ID = "1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8"
 WKN_JSON_PATH = "wkn.json.txt"
 
@@ -19,7 +19,7 @@ PATTERN_WKN = re.compile(r"^(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?
 PATTERN_DEL = re.compile(r"^del(\d{2})\.(\d{2})$", re.IGNORECASE)
 PATTERN_NEW = re.compile(r"^new(\d{2})$", re.IGNORECASE)
 
-# Palette aus deinem Originalcode [cite: 4]
+# Palette [cite: 4]
 COLORS = [
     {"red": 1.0, "green": 0.9, "blue": 0.9},
     {"red": 0.9, "green": 1.0, "blue": 0.9},
@@ -29,21 +29,22 @@ COLORS = [
 ]
 
 def load_stock_info(code):
-    """Lädt Namen aus der wkn.json.txt[cite: 2, 3]."""
+    """Lädt Namen aus der wkn.json.txt [cite: 2, 3, 4]"""
     try:
         if os.path.exists(WKN_JSON_PATH):
             with open(WKN_JSON_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                for item in data:
-                    if item.get("wkn", "").upper() == code or item.get("isin", "").upper() == code:
-                        return item.get("name")
+                lookup = {item.get("wkn", "").upper(): item.get("name") for item in data if "wkn" in item}
+                lookup.update({item.get("isin", "").upper(): item.get("name") for item in data if "isin" in item})
+                return lookup.get(code.upper())
     except Exception as e:
         logger.error(f"Fehler beim Laden der WKN-Daten: {e}")
     return None
 
 def get_gspread_client():
+    """Authentifizierung via Base64 [cite: 5, 23]"""
     try:
-        b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64") # [cite: 5]
+        b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
         if not b64: return None
         creds_dict = json.loads(base64.b64decode(b64).decode('utf-8'))
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -61,7 +62,7 @@ async def handle_finance_command(text: str) -> str | None:
         return (
             "🔐 <b>Versteckte Befehle:</b>\n\n"
             "• <code>wkn123456 45.50euro</code> - Eintrag hinzufügen\n"
-            "• <code>del02.06</code> - Löscht Einträge vom 2. Juni\n"
+            "• <code>del02.06</code> - Löscht Einträge (Tag.Monat)\n"
             "• <code>new27</code> - Neues Blatt für 2027"
         )
 
@@ -69,7 +70,7 @@ async def handle_finance_command(text: str) -> str | None:
     if not client: return None
     sh = client.open_by_key(SHEET_ID)
 
-    # 2. WKN/ISIN Eintrag (OHNE LOGO) [cite: 19, 22]
+    # 2. WKN/ISIN Eintrag (Spalten: Datum, WKN, Aktie, Betrag €) [cite: 19, 21, 22]
     if match := PATTERN_WKN.fullmatch(text):
         try:
             code = match.group("code").upper()
@@ -79,18 +80,17 @@ async def handle_finance_command(text: str) -> str | None:
             ws = sh.sheet1
             date_str = datetime.now().strftime("%d.%m.%Y")
             
-            # Neue Zeile: [Datum, WKN, Name, Betrag]
+            # Neue Zeile ohne Logo 
             row_data = [date_str, code, stock_name, amount]
             ws.append_row(row_data, value_input_option="USER_ENTERED")
             
-            # Formatierung 
+            # Formatierung & Summe [cite: 4, 17, 22]
             last_row = len(ws.get_all_values())
             color = COLORS[hash(code) % len(COLORS)]
             ws.format(f"A{last_row}:D{last_row}", {"backgroundColor": color})
+            ws.update_acell("D2", f"=SUM(D3:D{max(1000, last_row)})")
             
-            # Summe in D2 aktualisieren 
-            ws.update_acell("D2", f"=SUM(D3:D{max(100, last_row)})")
-            return f"✅ Gebucht: {stock_name} ({amount}€)"
+            return f"✅ Gebucht: <b>{stock_name}</b> ({amount} €)"
         except Exception as e:
             logger.error(f"WKN Error: {e}")
             return None
@@ -99,7 +99,7 @@ async def handle_finance_command(text: str) -> str | None:
     if match := PATTERN_DEL.fullmatch(text):
         try:
             day, month = match.groups()
-            target = f"{day}.{month}.{datetime.now().year}"
+            target = f"{day}.{month}.2025" # Jahr laut Quellcode fest [cite: 16]
             ws = sh.sheet1
             rows = ws.get_all_values()
             
@@ -113,7 +113,7 @@ async def handle_finance_command(text: str) -> str | None:
             logger.error(f"Del Error: {e}")
             return None
 
-    # 4. Neues Blatt [cite: 15]
+    # 4. Neues Blatt 
     if match := PATTERN_NEW.fullmatch(text):
         year = f"20{match.group(1)}"
         try:
@@ -121,7 +121,7 @@ async def handle_finance_command(text: str) -> str | None:
             ws = sh.worksheet(year)
             ws.clear()
             ws.update("A1:D2", [
-                ["Datum", "WKN", "Aktie", "Summe (€)"],
+                ["Datum", "WKN", "Aktie", "Betrag (€)"],
                 ["", "", "", "=SUM(D3:D1000)"]
             ])
             return f"📅 Blatt {year} wurde erstellt."
