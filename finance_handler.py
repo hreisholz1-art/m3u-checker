@@ -9,17 +9,17 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 logger = logging.getLogger(__name__)
 
-# Konfiguration [cite: 5, 24]
+# Настройки таблицы
 SHEET_ID = "1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8"
 WKN_JSON_PATH = "wkn.json.txt"
 
-# Regex Patterns [cite: 14, 16, 18]
+# Регулярные выражения для команд [cite: 14, 16, 18]
 PATTERN_HELP = re.compile(r"^/mysecret$")
 PATTERN_WKN = re.compile(r"^(?P<prefix>wkn|isin)(?P<code>[a-zA-Z0-9]{6,12})\s+(?P<amount>\d+\.?\d*)\s*euro", re.IGNORECASE)
 PATTERN_DEL = re.compile(r"^del(\d{2})\.(\d{2})$", re.IGNORECASE)
 PATTERN_NEW = re.compile(r"^new(\d{2})$", re.IGNORECASE)
 
-# Palette [cite: 4]
+# Цвета для строк [cite: 4, 22]
 COLORS = [
     {"red": 1.0, "green": 0.9, "blue": 0.9},
     {"red": 0.9, "green": 1.0, "blue": 0.9},
@@ -29,20 +29,20 @@ COLORS = [
 ]
 
 def load_stock_info(code):
-    """Lädt Namen aus der wkn.json.txt [cite: 2, 3, 4]"""
+    """Поиск названия акции в wkn.json.txt [cite: 2, 3, 19]"""
     try:
         if os.path.exists(WKN_JSON_PATH):
             with open(WKN_JSON_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                lookup = {item.get("wkn", "").upper(): item.get("name") for item in data if "wkn" in item}
-                lookup.update({item.get("isin", "").upper(): item.get("name") for item in data if "isin" in item})
-                return lookup.get(code.upper())
+                for item in data:
+                    if item.get("wkn", "").upper() == code or item.get("isin", "").upper() == code:
+                        return item.get("name")
     except Exception as e:
-        logger.error(f"Fehler beim Laden der WKN-Daten: {e}")
+        logger.error(f"Ошибка чтения WKN-файла: {e}")
     return None
 
-def get_gspread_client():
-    """Authentifizierung via Base64 [cite: 5, 23]"""
+def get_client():
+    """Авторизация в Google Sheets [cite: 4, 5, 23, 24]"""
     try:
         b64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
         if not b64: return None
@@ -51,82 +51,62 @@ def get_gspread_client():
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         return gspread.authorize(creds)
     except Exception as e:
-        logger.error(f"Auth Fehler: {e}")
+        logger.error(f"Ошибка Google Auth: {e}")
         return None
 
 async def handle_finance_command(text: str) -> str | None:
     text = text.strip()
 
-    # 1. Hilfe [cite: 14]
     if PATTERN_HELP.fullmatch(text):
-        return (
-            "🔐 <b>Versteckte Befehle:</b>\n\n"
-            "• <code>wkn123456 45.50euro</code> - Eintrag hinzufügen\n"
-            "• <code>del02.06</code> - Löscht Einträge (Tag.Monat)\n"
-            "• <code>new27</code> - Neues Blatt für 2027"
-        )
+        return "🔐 <b>Команды:</b>\n<code>wkn123456 45.50euro</code>\n<code>del02.06</code>\n<code>new27</code>" [cite: 13, 14]
 
-    client = get_gspread_client()
+    client = get_client()
     if not client: return None
     sh = client.open_by_key(SHEET_ID)
+    ws = sh.sheet1
 
-    # 2. WKN/ISIN Eintrag (Spalten: Datum, WKN, Aktie, Betrag €) [cite: 19, 21, 22]
+    # Добавление дивиденда (A: Дата, B: WKN, C: Название, D: Сумма) [cite: 19, 21, 22]
     if match := PATTERN_WKN.fullmatch(text):
         try:
             code = match.group("code").upper()
             amount = float(match.group("amount"))
-            stock_name = load_stock_info(code) or f"Aktie {code}"
+            stock_name = load_stock_info(code) or f"WKN{code}"
             
-            ws = sh.sheet1
             date_str = datetime.now().strftime("%d.%m.%Y")
+            row = [date_str, code, stock_name, amount]
             
-            # Neue Zeile ohne Logo 
-            row_data = [date_str, code, stock_name, amount]
-            ws.append_row(row_data, value_input_option="USER_ENTERED")
-            
-            # Formatierung & Summe [cite: 4, 17, 22]
+            # Добавляем в конец таблицы [cite: 21, 22]
+            ws.append_row(row, value_input_option="USER_ENTERED")
             last_row = len(ws.get_all_values())
+            
+            # Красим строку [cite: 4, 22]
             color = COLORS[hash(code) % len(COLORS)]
             ws.format(f"A{last_row}:D{last_row}", {"backgroundColor": color})
-            ws.update_acell("D2", f"=SUM(D3:D{max(1000, last_row)})")
             
-            return f"✅ Gebucht: <b>{stock_name}</b> ({amount} €)"
+            # Обновляем ячейку C1 (значение суммы) для столбца D [cite: 15, 17, 22]
+            # В B1 у тебя написано "Сумма", значит результат формулы будет в C1
+            ws.update_acell("C1", f"=SUM(D2:D1000)")
+            
+            return f"✅ Записано: <b>{stock_name}</b> ({amount} €)" [cite: 22]
         except Exception as e:
-            logger.error(f"WKN Error: {e}")
+            logger.error(f"Ошибка WKN: {e}")
             return None
 
-    # 3. Löschen [cite: 17, 18]
+    # Удаление записей [cite: 16, 17, 18]
     if match := PATTERN_DEL.fullmatch(text):
         try:
             day, month = match.groups()
-            target = f"{day}.{month}.2025" # Jahr laut Quellcode fest [cite: 16]
-            ws = sh.sheet1
+            target_date = f"{day}.{month}.2026"
             rows = ws.get_all_values()
+            to_del = [i+1 for i, r in enumerate(rows) if r and r[0] == target_date]
             
-            to_del = [i+1 for i, r in enumerate(rows) if len(r) > 0 and r[0] == target]
             for i in sorted(to_del, reverse=True):
                 ws.delete_rows(i)
             
-            ws.update_acell("D2", "=SUM(D3:D1000)")
-            return f"🗑️ {len(to_del)} Einträge für {target} gelöscht."
+            ws.update_acell("C1", "=SUM(D2:D1000)")
+            return f"🗑 Удалено {len(to_del)} строк за {target_date}" [cite: 18]
         except Exception as e:
-            logger.error(f"Del Error: {e}")
-            return None
-
-    # 4. Neues Blatt 
-    if match := PATTERN_NEW.fullmatch(text):
-        year = f"20{match.group(1)}"
-        try:
-            sh.duplicate_sheet(sh.sheet1.id, new_sheet_name=year)
-            ws = sh.worksheet(year)
-            ws.clear()
-            ws.update("A1:D2", [
-                ["Datum", "WKN", "Aktie", "Betrag (€)"],
-                ["", "", "", "=SUM(D3:D1000)"]
-            ])
-            return f"📅 Blatt {year} wurde erstellt."
-        except Exception as e:
-            logger.error(f"New Error: {e}")
+            logger.error(f"Ошибка удаления: {e}")
             return None
 
     return None
