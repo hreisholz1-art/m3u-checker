@@ -1,7 +1,8 @@
 import logging
-from aiogram import Bot, Dispatcher, Router, F, types
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.utils import executor
+from aiogram.types import ContentType
 from deploy import BOT_TOKEN, WEBHOOK_SECRET
 from finance_handler import handle_finance_command
 from m3u_handler import handle_m3u_document
@@ -10,13 +11,13 @@ from m3u_handler import handle_m3u_document
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Инициализация
+# Инициализация бота
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher()
-router = Router()
+storage = MemoryStorage()
+dp = Dispatcher(bot, storage=storage)
 
 # Хендлер для текстовых сообщений
-@router.message(F.text)
+@dp.message_handler(content_types=ContentType.TEXT)
 async def handle_text(message: types.Message):
     logger.info(f"Получено текстовое сообщение: {message.text}")
     response = handle_finance_command(message.text)
@@ -24,20 +25,21 @@ async def handle_text(message: types.Message):
         await message.answer(response)
 
 # Хендлер для документов
-@router.message(F.document)
+@dp.message_handler(content_types=ContentType.DOCUMENT)
 async def handle_document(message: types.Message):
     await handle_m3u_document(message)
 
-# Подключение роутера
-dp.include_router(router)
-
-# FastAPI приложение
-app = web.Application()
-SimpleRequestHandler(dp, bot).register(app, path=f"/webhook/{WEBHOOK_SECRET}")
-
-# Установка вебхука при старте
-async def on_startup():
+# Настройка вебхука
+async def on_startup(dp):
     await bot.set_webhook(f"https://m3u-checker-ccpf.onrender.com/webhook/{WEBHOOK_SECRET}")
     logger.info("Вебхук установлен")
 
-app.on_startup.append(on_startup)
+if __name__ == "__main__":
+    executor.start_webhook(
+        dp,
+        webhook_path=f"/webhook/{WEBHOOK_SECRET}",
+        on_startup=on_startup,
+        skip_updates=True,
+        host="0.0.0.0",
+        port=10000,
+    )
