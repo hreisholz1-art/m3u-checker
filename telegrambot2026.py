@@ -58,85 +58,9 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        CREATE TABLE IF NOT EXISTS dividends (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            date TEXT NOT NULL,
-            wkn TEXT NOT NULL,
-            name TEXT NOT NULL,
-            amount REAL NOT NULL,
-            logo_url TEXT,
-            year INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS wkn_lookup (
-            code TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            logo_url TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-    logger.info("✅ База данных инициализирована")
-
-def load_wkn_json():
-    """Загрузка WKN данных из JSON в SQLite"""
-    try:
-        if not Path("wkn.json.txt").exists():
-            logger.warning("wkn.json.txt не найден - пропускаем загрузку")
-            return
-            
-        with open("wkn.json.txt", "r", encoding="utf-8") as f:
-            data = json.load(f)
-        
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        count = 0
-        for item in data:
-            name = item.get("name", "")
-            wkn = item.get("wkn", "").strip().upper()
-            isin = item.get("isin", "").strip().upper()
-            
-            if wkn:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name) VALUES (?, ?)",
-                         (wkn, name))
-                count += 1
-            if isin:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name) VALUES (?, ?)",
-                         (isin, name))
-                count += 1
-        
-        conn.commit()
-        conn.close()
-        logger.info(f"✅ Загружено {count} записей из wkn.json.txt")
-    except Exception as e:
-        logger.error(f"Ошибка загрузки wkn.json.txt: {e}")
-
-def get_wkn_info(code: str):
-    """Получить информацию о WKN/ISIN из базы"""
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT name FROM wkn_lookup WHERE code = ?", (code.upper(),))
-    result = c.fetchone()
-    conn.close()
-    
-    if result:
-        return {"name": result[0]}
-    return None
-
-def add_dividend_to_db(date: str, wkn: str, name: str, amount: float, year: int = None):
-    """Добавить запись о дивиденде в локальную БД"""
-    if year is None:
-        year = datetime.now().year
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("""
         INSERT INTO dividends (date, wkn, name, amount, year)
 VALUES (?, ?, ?, ?, ?)
-    """, (date, wkn, name, amount, logo_url, year))
+    """, (date, wkn, name, amount, year))
     conn.commit()
     conn.close()
 
@@ -153,10 +77,13 @@ def delete_dividends_by_date(date: str, year: int = None):
     conn.close()
     return deleted
 
+
 def generate_excel(year: int = None):
     """Генерация Excel файла с дивидендами"""
     if year is None:
         year = datetime.now().year
+    
+    print(f"🔧 Генерирую Excel за {year} год...")
     
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -169,6 +96,8 @@ def generate_excel(year: int = None):
     rows = c.fetchall()
     conn.close()
     
+    print(f"📊 Найдено записей: {len(rows)}")
+    
     wb = Workbook()
     ws = wb.active
     ws.title = str(year)
@@ -177,50 +106,75 @@ def generate_excel(year: int = None):
     headers = ["Дата", "WKN", "Акция", "Сумма (€)"]
     ws.append(headers)
     
+    # Стиль заголовков
+    header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    for col in range(1, 5):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+    
     # Цвета для разных WKN
     colors = [
-        "FFCCCC", "CCFFCC", "CCCCFF", "FFFFCC", "CCFFFF",
-        "FFCCFF", "FFE6CC", "E6CCFF", "CCE6FF", "FFCCAA"
+        "E6F3FF", "FFF0E6", "E6FFE6", "FFF6E6", "F0E6FF",
+        "FFE6E6", "E6FFFF", "FFFFE6", "F5E6FF", "E6FFF0"
     ]
     wkn_colors = {}
     
     # Данные
     current_row = 2
-    for row_data in rows:
-        ws.append(row_data)
-        current_row += 1
-        
-        # Цвет для WKN
-        wkn = row_data[1]
-        if wkn not in wkn_colors:
-            wkn_colors[wkn] = colors[len(wkn_colors) % len(colors)]
-        
-        fill = PatternFill(start_color=wkn_colors[wkn], end_color=wkn_colors[wkn], fill_type="solid")
-        for col in range(1, 5):
-            ws.cell(row=current_row, column=col).fill = fill
+    total_sum = 0
+    
+    if rows:
+        for date, wkn, name, amount in rows:
+            ws.append([date, wkn, name, amount])
+            current_row += 1
+            total_sum += amount
+            
+            # Цвет для WKN
+            if wkn not in wkn_colors:
+                wkn_colors[wkn] = colors[len(wkn_colors) % len(colors)]
+            
+            fill = PatternFill(start_color=wkn_colors[wkn], end_color=wkn_colors[wkn], fill_type="solid")
+            for col in range(1, 5):
+                ws.cell(row=current_row, column=col).fill = fill
+    else:
+        print("⚠️ Нет данных для отображения")
+        ws.append(["Нет данных", "", "", ""])
+        current_row = 3
     
     # Строка с суммой
     sum_row = current_row + 1
     ws[f"A{sum_row}"] = "ИТОГО"
-    ws[f"D{sum_row}"] = f"=SUM(D2:D{current_row})"
+    ws[f"D{sum_row}"] = total_sum if rows else 0
     
-    # Форматирование
+    # Стиль итоговой строки
+    total_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    total_font = Font(bold=True)
     for col in range(1, 5):
-        ws.cell(row=sum_row, column=col).fill = PatternFill(
-            start_color="FFFF00", end_color="FFFF00", fill_type="solid"
-        )
+        ws.cell(row=sum_row, column=col).fill = total_fill
+        ws.cell(row=sum_row, column=col).font = total_font
     
     # Ширина колонок
-    ws.column_dimensions['A'].width = 12
-        ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 15
     ws.column_dimensions['C'].width = 40
-    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['D'].width = 15
+    
+    # Форматирование чисел
+    for row in ws.iter_rows(min_row=2, max_row=current_row, min_col=4, max_col=4):
+        for cell in row:
+            cell.number_format = '#,##0.00€'
+    
+    # Форматирование итога
+    ws[f"D{sum_row}"].number_format = '#,##0.00€'
     
     # Сохранение
     output_path = Path(f"dividends_{year}.xlsx")
     wb.save(output_path)
+    
+    print(f"✅ Excel сохранен: {output_path}")
     return output_path
-
 # ─────────────── GOOGLE SHEETS ───────────────
 COLORS = [
     {"red": 1.0, "green": 0.9, "blue": 0.9},
@@ -243,7 +197,7 @@ def _get_spreadsheet():
     client = gspread.authorize(creds)
     return client.open_by_key("1r2P4pF1TcICCuUAZNZm5lEpykVVZe94QZQ6-z6CrNg8")
 
-def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float, logo_url: str = ""):
+def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float):
     """Добавить дивиденд в Google Sheets"""
     try:
         sheet = _get_spreadsheet().sheet1
@@ -255,13 +209,13 @@ def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float, logo_u
         data_row = last_row + 1
         sum_row = data_row + 1
 
-        sheet.update(f"A{data_row}", [[date, '', name, wkn, amount]])        
+        sheet.update(f"A{data_row}", [[date, name, wkn, amount]])        
         # Цвет
         color = get_color_for_wkn(wkn)
-        sheet.format(f"A{data_row}:E{data_row}", {"backgroundColor": color})
+        sheet.format(f"A{data_row}:D{data_row}", {"backgroundColor": color})
         
         # Формула суммы
-        sheet.update(f"E{sum_row}", f"=SUM(E3:E{data_row})")
+        sheet.update(f"D{sum_row}", f"=SUM(D3:D{data_row})")
         
         return True
     except Exception as e:
@@ -280,7 +234,7 @@ def delete_from_sheets(date: str):
         
         # Обновить формулу суммы
         last = max(3, len(sheet.get_all_values()))
-        sheet.update("E2", f"=SUM(E3:E{last})")
+        sheet.update("D2", f"=SUM(D3:D{last})")
         
         return len(to_del)
     except Exception as e:
@@ -421,9 +375,9 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             sh.duplicate_sheet(sh.sheet1.id, insert_sheet_index=1, new_sheet_name=year)
             sheet = sh.worksheet(year)
             sheet.clear()
-            sheet.update("A1:E2", [
-                ["Дата", "Логотип", "WKN", "Акция", "Сумма (€)"],
-                ["", "", "", "", "=SUM(E3:E1000)"]
+            sheet.update("A1:D2", [
+        ["Дата", "WKN", "Акция", "Сумма (€)"],
+                ["", "", "", "=SUM(D3:D1000)"]
             ])
             await update.message.reply_text(f"🆕 Лист {year} создан в Google Sheets")
         except Exception as e:
@@ -465,10 +419,8 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             
             if stock_info:
                 stock_name = stock_info["name"]
-                logo_url = stock_info["logo"]
             else:
                 stock_name = f"WKN{code}"
-                logo_url = ""
 
             date_str = datetime.now().strftime("%d.%m.%Y")
             year = datetime.now().year
@@ -477,7 +429,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             add_dividend_to_db(date_str, code, stock_name, amount, year)
             
             # Добавить в Google Sheets
-            sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount, logo_url)
+            sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount)
             
             status = "✅ Добавлено в БД и Sheets" if sheets_ok else "⚠️ Добавлено в БД (Sheets недоступен)"
             
