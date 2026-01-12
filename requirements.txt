@@ -1,7 +1,7 @@
-aiogram==3.0.0
-fastapi==0.110.0
-uvicorn==0.29.0
+aiogram==3.3.0
+fastapi==0.95.2
+uvicorn==0.22.0
 google-api-python-client==2.95.0
-google-auth==2.41.1
-google-auth-oauthlib==1.2.3
-gspread==6.1.2
+google-auth==2.23.4
+google-auth-oauthlib==1.2.0
+gspread==6.0.2
