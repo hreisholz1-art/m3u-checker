@@ -7,14 +7,12 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Обновление pip
-RUN pip install --upgrade pip
-
-# Установка зависимостей
+# Обновление pip и установка зависимостей
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода
+# Копирование кода приложения
 COPY . .
 
 EXPOSE 10000
