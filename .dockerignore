@@ -3,18 +3,12 @@ __pycache__/
 *.pyo
 *.pyd
 .Python
-.env
-.venv
-env/
-venv/
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-.DS_Store
-.git/
-*.log
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 temp_*
-test_*
-local.py  # Wichtig: Nicht in Production container kopieren!
+.git/
+.env
+local.py
