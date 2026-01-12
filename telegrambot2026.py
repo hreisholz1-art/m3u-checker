@@ -96,17 +96,16 @@ def load_wkn_json():
         count = 0
         for item in data:
             name = item.get("name", "")
-            logo = item.get("logo_url", "").strip()
             wkn = item.get("wkn", "").strip().upper()
             isin = item.get("isin", "").strip().upper()
             
             if wkn:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name, logo_url) VALUES (?, ?, ?)",
-                         (wkn, name, logo))
+                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name) VALUES (?, ?)",
+                         (wkn, name))
                 count += 1
             if isin:
-                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name, logo_url) VALUES (?, ?, ?)",
-                         (isin, name, logo))
+                c.execute("INSERT OR REPLACE INTO wkn_lookup (code, name) VALUES (?, ?)",
+                         (isin, name))
                 count += 1
         
         conn.commit()
@@ -119,15 +118,15 @@ def get_wkn_info(code: str):
     """Получить информацию о WKN/ISIN из базы"""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT name, logo_url FROM wkn_lookup WHERE code = ?", (code.upper(),))
+    c.execute("SELECT name FROM wkn_lookup WHERE code = ?", (code.upper(),))
     result = c.fetchone()
     conn.close()
     
     if result:
-        return {"name": result[0], "logo": result[1]}
+        return {"name": result[0]}
     return None
 
-def add_dividend_to_db(date: str, wkn: str, name: str, amount: float, logo_url: str = "", year: int = None):
+def add_dividend_to_db(date: str, wkn: str, name: str, amount: float, year: int = None):
     """Добавить запись о дивиденде в локальную БД"""
     if year is None:
         year = datetime.now().year
@@ -135,8 +134,8 @@ def add_dividend_to_db(date: str, wkn: str, name: str, amount: float, logo_url: 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO dividends (date, wkn, name, amount, logo_url, year)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO dividends (date, wkn, name, amount, year)
+VALUES (?, ?, ?, ?, ?)
     """, (date, wkn, name, amount, logo_url, year))
     conn.commit()
     conn.close()
@@ -162,7 +161,7 @@ def generate_excel(year: int = None):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        SELECT date, logo_url, wkn, name, amount 
+        SELECT date, wkn, name, amount 
         FROM dividends 
         WHERE year = ? 
         ORDER BY date
@@ -175,7 +174,7 @@ def generate_excel(year: int = None):
     ws.title = str(year)
     
     # Заголовки
-    headers = ["Дата", "Логотип", "WKN", "Акция", "Сумма (€)"]
+    headers = ["Дата", "WKN", "Акция", "Сумма (€)"]
     ws.append(headers)
     
     # Цвета для разных WKN
@@ -192,31 +191,30 @@ def generate_excel(year: int = None):
         current_row += 1
         
         # Цвет для WKN
-        wkn = row_data[2]
+        wkn = row_data[1]
         if wkn not in wkn_colors:
             wkn_colors[wkn] = colors[len(wkn_colors) % len(colors)]
         
         fill = PatternFill(start_color=wkn_colors[wkn], end_color=wkn_colors[wkn], fill_type="solid")
-        for col in range(1, 6):
+        for col in range(1, 5):
             ws.cell(row=current_row, column=col).fill = fill
     
     # Строка с суммой
     sum_row = current_row + 1
     ws[f"A{sum_row}"] = "ИТОГО"
-    ws[f"E{sum_row}"] = f"=SUM(E2:E{current_row})"
+    ws[f"D{sum_row}"] = f"=SUM(D2:D{current_row})"
     
     # Форматирование
-    for col in range(1, 6):
+    for col in range(1, 5):
         ws.cell(row=sum_row, column=col).fill = PatternFill(
             start_color="FFFF00", end_color="FFFF00", fill_type="solid"
         )
     
     # Ширина колонок
     ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 50
-    ws.column_dimensions['C'].width = 12
-    ws.column_dimensions['D'].width = 40
-    ws.column_dimensions['E'].width = 12
+        ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 40
+    ws.column_dimensions['D'].width = 12
     
     # Сохранение
     output_path = Path(f"dividends_{year}.xlsx")
@@ -476,7 +474,7 @@ async def handle_hidden_commands(update: Update, context: ContextTypes.DEFAULT_T
             year = datetime.now().year
             
             # Добавить в БД
-            add_dividend_to_db(date_str, code, stock_name, amount, logo_url, year)
+            add_dividend_to_db(date_str, code, stock_name, amount, year)
             
             # Добавить в Google Sheets
             sheets_ok = add_dividend_to_sheets(date_str, code, stock_name, amount, logo_url)
