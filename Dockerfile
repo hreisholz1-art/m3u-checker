@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -17,14 +16,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Устанавливаем Python-зависимости
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем исходный код
 COPY . .
 
 EXPOSE 8000
 
-# Запуск бота
 CMD ["python", "telegrambot2026.py"]
