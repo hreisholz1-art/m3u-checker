@@ -8,141 +8,169 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import m3u_handler
 import finance_handler
 
-# ===== КОНФИГУРАЦИЯ =====
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "very-secret")
 
-# ===== ТЕЛЕГРАМ ХЕНДЛЕРЫ =====
+# ===== COMMAND HANDLERS =====
+
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик команды /start"""
     await update.message.reply_text(
-        "👋 Привет!\n\n"
-        "📁 **M3U Обработчик**\n"
-        "   → Отправь файл .m3u/.m3u8/.txt\n"
-        "   → Я проверю все потоки и верну рабочие\n\n"
-        "📈 **Финансовый трекер**\n"
-        "   → `wkn123456 45.50euro` - добавить дивиденд\n"
-        "   → `del02.06` - удалить записи за дату\n"
-        "   → `/mysecret` - показать все команды"
+        "🤖 Бот запущен!\n\n"
+        "📂 Отправь .m3u/.m3u8 файл для обработки\n"
+        "💰 Используй /mysecret для финансовых команд"
     )
 
-async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Маршрутизатор текстовых сообщений"""
+async def mysecret_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик команды /mysecret - показывает помощь по финансам"""
+    help_text = (
+        "🔐 <b>Финансовые команды:</b>\n\n"
+        "📊 <b>Добавить дивиденды:</b>\n"
+        "<code>wkn123456 45.50euro</code>\n"
+        "<code>isinDE0000123456 100euro</code>\n\n"
+        "🗑 <b>Удалить записи:</b>\n"
+        "<code>del02.06</code> - удалить все записи за 02.06.2026\n\n"
+        "📈 Данные сохраняются в Google Sheets"
+    )
+    await update.message.reply_html(help_text)
+
+# ===== MESSAGE HANDLERS =====
+
+async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик ТОЛЬКО для файлов M3U"""
+    doc = update.message.document
+    if not doc:
+        return
+    
+    file_name = doc.file_name or "unknown"
+    logger.info(f"📂 Получен документ: {file_name}")
+    
+    # Проверяем расширение файла
+    if not any(file_name.lower().endswith(ext) for ext in ['.m3u', '.m3u8', '.txt']):
+        await update.message.reply_text(
+            "⚠️ Поддерживаются только файлы .m3u, .m3u8 или .txt"
+        )
+        return
+    
+    # Передаем обработку в m3u_handler
+    await m3u_handler.process_m3u_document(update, context)
+
+async def handle_finance_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик ТОЛЬКО для текстовых финансовых команд"""
     if not update.message or not update.message.text:
         return
     
     text = update.message.text.strip()
+    logger.info(f"💬 Получен текст: {text[:50]}...")
     
-    # Финансовые команды имеют приоритет
+    # Пытаемся обработать как финансовую команду
     response = await finance_handler.handle_finance_command(text)
     
     if response:
-        # Финансовая команда обработана
+        # Команда распознана и обработана
         await update.message.reply_html(response)
-    elif text == "/mysecret":
-        # Явный вызов команды /mysecret
-        await update.message.reply_text(
-            "🔐 **Скрытые команды:**\n\n"
-            "• <code>wkn123456 45.50euro</code> - добавить дивиденд\n"
-            "• <code>isinDE00012345 30euro</code> - добавить по ISIN\n"
-            "• <code>del02.06</code> - удалить записи за 2 июня\n"
-            "• <code>/mysecret</code> - показать эту справку\n\n"
-            "📁 **M3U обработка:**\n"
-            "• Просто отправь файл .m3u/.m3u8/.txt",
-            parse_mode="HTML"
-        )
     else:
-        # Неизвестная текстовая команда
+        # Команда не распознана - показываем подсказку
         await update.message.reply_text(
-            "ℹ️ Я могу:\n"
-            "• Обрабатывать M3U файлы (отправь файл)\n"
-            "• Вести учёт дивидендов (например: wkn123456 100euro)\n"
-            "• Показать все команды: /mysecret"
+            "❓ Команда не распознана.\n"
+            "Используй /mysecret для справки по финансовым командам"
         )
 
-# ===== FASTAPI LIFESPAN =====
+# ===== FASTAPI APPLICATION =====
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управление жизненным циклом приложения"""
-    # Инициализация бота
+    logger.info("🚀 Запуск Telegram бота...")
+    
+    # Создаем приложение бота
     bot_app = Application.builder().token(TOKEN).build()
     
-    # ВАЖНО: Порядок имеет значение!
-    # 1. Сначала команды
+    # Регистрируем обработчики КОМАНД
     bot_app.add_handler(CommandHandler("start", start_command))
-    bot_app.add_handler(CommandHandler("mysecret", text_router))  # Обрабатывается в text_router
+    bot_app.add_handler(CommandHandler("mysecret", mysecret_command))
     
-    # 2. Затем текстовые сообщения (финансовые команды)
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, text_router))
+    # Регистрируем обработчики СООБЩЕНИЙ (порядок важен!)
+    # 1. Документы обрабатываются первыми
+    bot_app.add_handler(
+        MessageHandler(
+            filters.Document.ALL & ~filters.COMMAND,
+            handle_document
+        )
+    )
     
-    # 3. В конце документы (M3U файлы)
-    bot_app.add_handler(MessageHandler(filters.Document.ALL, m3u_handler.process_m3u_document))
+    # 2. Текстовые сообщения обрабатываются вторыми
+    bot_app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            handle_finance_text
+        )
+    )
     
-    # Инициализация
+    # Инициализируем бота
     await bot_app.initialize()
     await bot_app.start()
     
-    # Сохраняем в состоянии приложения
+    # Сохраняем в state приложения
     app.state.tg_app = bot_app
     
-    logger.info("✅ Бот запущен успешно")
+    logger.info("✅ Бот успешно запущен")
+    logger.info(f"   - Webhook: {WEBHOOK_URL if WEBHOOK_URL else 'Polling mode'}")
+    
     yield
     
-    # Завершение работы
-    logger.info("🛑 Завершение работы бота...")
+    # Остановка бота
+    logger.info("🛑 Остановка бота...")
     await bot_app.stop()
     await bot_app.shutdown()
 
-# ===== FASTAPI APP =====
-app = FastAPI(
-    title="Telegram Bot 2026",
-    description="M3U Processor & Finance Tracker",
-    version="1.0.0",
-    lifespan=lifespan
-)
+# Создаем FastAPI приложение
+app = FastAPI(lifespan=lifespan)
+
+# Переменная для webhook URL
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+WEBHOOK_PATH = f"/webhook/{WEBHOOK_SECRET}"
+WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}{WEBHOOK_PATH}" if RENDER_EXTERNAL_URL else None
+
+# ===== ENDPOINTS =====
 
 @app.post(f"/webhook/{WEBHOOK_SECRET}")
 async def webhook(request: Request):
-    """Webhook endpoint для Telegram"""
+    """Обработчик входящих обновлений от Telegram"""
     try:
         data = await request.json()
         update = Update.de_json(data, app.state.tg_app.bot)
         await app.state.tg_app.process_update(update)
         return Response(status_code=200)
     except Exception as e:
-        logger.error(f"Webhook error: {e}")
+        logger.error(f"❌ Ошибка webhook: {e}")
         return Response(status_code=500)
 
 @app.get("/health")
-async def health_check():
-    """Health check для мониторинга"""
+def health():
+    """Health check endpoint для Render"""
     return {
-        "status": "healthy",
-        "service": "telegram-bot-2026",
-        "components": {
-            "bot": "initialized",
-            "m3u_handler": "ready",
-            "finance_handler": "ready"
-        }
+        "status": "ok",
+        "service": "telegram_bot_2026",
+        "webhook_configured": WEBHOOK_URL is not None
     }
 
 @app.get("/")
-async def root():
-    """Корневой эндпоинт"""
+def root():
+    """Корневой endpoint"""
     return {
         "service": "Telegram Bot 2026",
-        "version": "1.0.0",
-        "endpoints": {
-            "health": "/health",
-            "webhook": f"/webhook/{WEBHOOK_SECRET}",
-            "docs": "/docs"
-        }
+        "status": "running",
+        "features": ["M3U processing", "Finance tracking"]
     }
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
