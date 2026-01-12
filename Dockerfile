@@ -1,6 +1,7 @@
+# Используем Python 3.11 slim (стабильная версия, совместимая с Debian trixie)
 FROM python:3.11-slim
 
-# Устанавливаем системные зависимости
+# Устанавливаем системные зависимости — без устаревшего libgl1-mesa-glx
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     ffmpeg \
@@ -13,20 +14,23 @@ RUN apt-get update && \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Рабочая директория
 WORKDIR /app
 
-# Устанавливаем Python-зависимости
+# Копируем зависимости и устанавливаем Python-пакеты
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копируем исходный код
 COPY . .
 
-# Проверка установки (опционально)
+# Проверяем установку FFmpeg и Tesseract (опционально, но полезно для отладки)
 RUN ffmpeg -version && tesseract --version
 
+# Порт, который Render будет использовать (через переменную окружения PORT)
 EXPOSE 8000
 
 # Запуск бота
