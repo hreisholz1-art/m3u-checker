@@ -4,615 +4,538 @@
     "ticker": "BAS",
     "wkn": "BASF11",
     "isin": "DE000BASF111",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000BASF111.png"
+    "type": "stock"
   },
   {
     "name": "BP",
     "ticker": "BP.",
     "wkn": "861837",
     "isin": "GB0007980591",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/GB0007980591.png"
+    "type": "stock"
   },
   {
     "name": "RWE",
     "ticker": "RWE",
     "wkn": "703712",
     "isin": "DE0007037129",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007037129.png"
+    "type": "stock"
   },
   {
     "name": "Axa",
     "ticker": "CS",
     "wkn": "855869",
     "isin": "FR0000120628",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/FR0000120628.png"
+    "type": "stock"
   },
   {
     "name": "Meta Platforms",
     "ticker": "META",
     "wkn": "A1JWV5",
     "isin": "US30303M1027",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US30303M1027.png"
+    "type": "stock"
   },
   {
     "name": "KLOECK & Co",
     "ticker": "KCO",
     "wkn": "KC0100",
     "isin": "DE000KC01000",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000KC01000.png"
+    "type": "stock"
   },
   {
     "name": "DEUTZ",
     "ticker": "DEZ",
     "wkn": "630500",
     "isin": "DE0006305006",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0006305006.png"
+    "type": "stock"
   },
   {
     "name": "Nvidia",
     "ticker": "NVDA",
     "wkn": "918422",
     "isin": "US67066G1040",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US67066G1040.png"
+    "type": "stock"
   },
   {
     "name": "Heidelberger Druck",
     "ticker": "HDD",
     "wkn": "731400",
     "isin": "DE0007314007",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007314007.png"
+    "type": "stock"
   },
   {
     "name": "Hapag Lloyd",
     "ticker": "HLAG",
     "wkn": "HLAG47",
     "isin": "DE000HLAG475",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000HLAG475.png"
+    "type": "stock"
   },
   {
     "name": "Enel",
     "ticker": "ENEL",
     "wkn": "855495",
     "isin": "IT0003128367",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/IT0003128367.png"
+    "type": "stock"
   },
   {
     "name": "E ON",
     "ticker": "EOAN",
     "wkn": "ENAG99",
     "isin": "DE000ENAG999",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000ENAG999.png"
+    "type": "stock"
   },
   {
     "name": "Bayer",
     "ticker": "BAYN",
     "wkn": "BAY001",
     "isin": "DE000BAY0017",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000BAY0017.png"
+    "type": "stock"
   },
   {
     "name": "BMW",
     "ticker": "BMW",
     "wkn": "519000",
     "isin": "DE0005190003",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0005190003.png"
+    "type": "stock"
   },
   {
     "name": "Suedzucker",
     "ticker": "SZU",
     "wkn": "729700",
     "isin": "DE0007297004",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007297004.png"
+    "type": "stock"
   },
   {
     "name": "TUI",
     "ticker": "TUI1",
     "wkn": "TUAG50",
     "isin": "DE000TUAG505",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000TUAG505.png"
+    "type": "stock"
   },
   {
     "name": "RTL Group",
     "ticker": "RTLL",
     "wkn": "861148",
     "isin": "LU0061462528",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/LU0061462528.png"
+    "type": "stock"
   },
   {
     "name": "Johnson&Johnson",
     "ticker": "JNJ",
     "wkn": "853260",
     "isin": "US4781601046",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US4781601046.png"
+    "type": "stock"
   },
   {
     "name": "Quirin Bank",
     "ticker": "QB7",
     "wkn": "520230",
     "isin": "DE0005202303",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0005202303.png"
+    "type": "stock"
   },
   {
     "name": "British American Tobacco",
     "ticker": "BATS",
     "wkn": "916029",
     "isin": "GB0002875804",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/GB0002875804.png"
+    "type": "stock"
   },
   {
     "name": "KPN",
     "ticker": "KPN",
     "wkn": "888055",
     "isin": "NL0000009082",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/NL0000009082.png"
+    "type": "stock"
   },
   {
     "name": "Munich Re",
     "ticker": "MUV2",
     "wkn": "843002",
     "isin": "DE0008430026",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0008430026.png"
+    "type": "stock"
   },
   {
     "name": "Alexanderwerk",
     "ticker": "ALXA",
     "wkn": "A37FTW",
     "isin": "DE000A37FTW0",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A37FTW0.png"
+    "type": "stock"
   },
   {
     "name": "DWS Group",
     "ticker": "DWS",
     "wkn": "DWS100",
     "isin": "DE000DWS1007",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000DWS1007.png"
+    "type": "stock"
   },
   {
     "name": "Uni Credit",
     "ticker": "UCG",
     "wkn": "A0M9F3",
     "isin": "IT0005239360",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/IT0005239360.png"
+    "type": "stock"
   },
   {
     "name": "PJSC Gazprom ADR CDI",
     "ticker": "OGZD",
     "wkn": "903276",
     "isin": "US3682872078",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US3682872078.png"
+    "type": "stock"
   },
   {
     "name": "RENK Group",
     "ticker": "R3NK",
     "wkn": "RENK73",
     "isin": "DE000RENK730",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000RENK730.png"
+    "type": "stock"
   },
   {
     "name": "ERSTE STOCK BIOTEC R01 (T)",
     "ticker": "IWTD",
     "wkn": "A0KCAJ",
     "isin": "AT0000746755",
-    "type": "fund",
-    "logo_url": "https://assets.getquin.com/logos/AT0000746755.png"
+    "type": "fund"
   },
   {
     "name": "AGCO",
     "ticker": "AGCO",
     "wkn": "855689",
     "isin": "US0010841023",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US0010841023.png"
+    "type": "stock"
   },
   {
     "name": "iShares MSCI World Energy Sector ETF D",
     "ticker": "WENS",
     "wkn": "A1JKS0",
     "isin": "IE00BJ5JP105",
-    "type": "etf",
-    "logo_url": "https://assets.getquin.com/logos/IE00BJ5JP105.png"
+    "type": "etf"
   },
   {
     "name": "Sixt",
     "ticker": "SIX2",
     "wkn": "723132",
     "isin": "DE0007231326",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007231326.png"
+    "type": "stock"
   },
   {
     "name": "ING Group",
     "ticker": "INGA",
     "wkn": "A2ANH2",
     "isin": "NL0011821202",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/NL0011821202.png"
+    "type": "stock"
   },
   {
     "name": "Xiaomi",
     "ticker": "1810",
     "wkn": "A2QJ5N",
     "isin": "KYG9830T1067",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/KYG9830T1067.png"
+    "type": "stock"
   },
   {
     "name": "Amazon",
     "ticker": "AMZN",
     "wkn": "906866",
     "isin": "US0231351067",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US0231351067.png"
+    "type": "stock"
   },
   {
     "name": "VanEck Video Gaming and eSports ETF A",
     "ticker": "ESGB",
     "wkn": "A2PKWQ",
     "isin": "IE00BYWQWR46",
-    "type": "etf",
-    "logo_url": "https://assets.getquin.com/logos/IE00BYWQWR46.png"
+    "type": "etf"
   },
   {
     "name": "Tesla",
     "ticker": "TSLA",
     "wkn": "A1CX3T",
     "isin": "US88160R1014",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US88160R1014.png"
+    "type": "stock"
   },
   {
     "name": "Henkel & KGAA Pref Shs",
     "ticker": "HEN3",
     "wkn": "604843",
     "isin": "DE0006048432",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0006048432.png"
+    "type": "stock"
   },
   {
     "name": "Siemens",
     "ticker": "SIE",
     "wkn": "723610",
     "isin": "DE0007236101",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007236101.png"
+    "type": "stock"
   },
   {
     "name": "Amundi STOXX Europe 600 Banks ETF",
     "ticker": "INDA",
     "wkn": "A2QJ5M",
     "isin": "LU2082996112",
-    "type": "etf",
-    "logo_url": "https://assets.getquin.com/logos/LU2082996112.png"
+    "type": "etf"
   },
   {
     "name": "iShares $ EM Bond ETF",
     "ticker": "IEMB",
     "wkn": "A0RGEY",
     "isin": "IE00B2NPKV68",
-    "type": "etf",
-    "logo_url": "https://assets.getquin.com/logos/IE00B2NPKV68.png"
+    "type": "etf"
   },
   {
     "name": "Vonovia",
     "ticker": "VNA",
     "wkn": "A1ML7J",
     "isin": "DE000A1ML7J1",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A1ML7J1.png"
+    "type": "stock"
   },
   {
     "name": "Lanxess",
     "ticker": "LXS",
     "wkn": "547040",
     "isin": "DE0005470405",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0005470405.png"
+    "type": "stock"
   },
   {
     "name": "Lyondell",
     "ticker": "LYB",
     "wkn": "A0Q4R5",
     "isin": "NL0009434992",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/NL0009434992.png"
+    "type": "stock"
   },
   {
     "name": "Adidas",
     "ticker": "ADS",
     "wkn": "A1EWWW",
     "isin": "DE000A1EWWW0",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A1EWWW0.png"
+    "type": "stock"
   },
   {
     "name": "Fuchs Pref Shs",
     "ticker": "FPE3",
     "wkn": "A3E5D6",
     "isin": "DE000A3E5D64",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A3E5D64.png"
+    "type": "stock"
   },
   {
     "name": "A2A",
     "ticker": "A2A",
     "wkn": "854105",
     "isin": "IT0001233417",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/IT0001233417.png"
+    "type": "stock"
   },
   {
     "name": "Plug Power",
     "ticker": "PLUG",
     "wkn": "A1JA81",
     "isin": "US72919P2020",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US72919P2020.png"
+    "type": "stock"
   },
   {
     "name": "Shell",
     "ticker": "SHEL",
     "wkn": "A3C7TY",
     "isin": "GB00BP6MXD84",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/GB00BP6MXD84.png"
+    "type": "stock"
   },
   {
     "name": "DroneShield",
     "ticker": "DRO",
     "wkn": "A2DMAA",
     "isin": "AU000000DRO2",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/AU000000DRO2.png"
+    "type": "stock"
   },
   {
     "name": "Sibanye Stillwater",
     "ticker": "SSW",
     "wkn": "A2PTSG",
     "isin": "ZAE000259701",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/ZAE000259701.png"
+    "type": "stock"
   },
   {
     "name": "Splendid Med",
     "ticker": "SPM",
     "wkn": "727950",
     "isin": "DE0007279507",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007279507.png"
+    "type": "stock"
   },
   {
     "name": "ACATIS Datini Valueflex Fonds B",
     "ticker": "WXIV",
     "wkn": "A1H72F",
     "isin": "DE000A1H72F1",
-    "type": "fund",
-    "logo_url": "https://assets.getquin.com/logos/DE000A1H72F1.png"
+    "type": "fund"
   },
   {
     "name": "FreeNet",
     "ticker": "FNTN",
     "wkn": "A0Z2ZZ",
     "isin": "DE000A0Z2ZZ5",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A0Z2ZZ5.png"
+    "type": "stock"
   },
   {
     "name": "LUS BSK IXZT OE",
     "ticker": "LUS",
     "wkn": "LS9PKB",
     "isin": "DE000LS9PKB0",
-    "type": "derivative",
-    "logo_url": "https://assets.getquin.com/logos/DE000LS9PKB0.png"
+    "type": "derivative"
   },
   {
     "name": "THE NAGA GROUP AG NA KONV",
     "ticker": "N4G",
     "wkn": "A41YCM",
     "isin": "DE000A41YCM0",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A41YCM0.png"
+    "type": "stock"
   },
   {
     "name": "Yum! Brands",
     "ticker": "YUM",
     "wkn": "867475",
     "isin": "US9884981013",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US9884981013.png"
+    "type": "stock"
   },
   {
     "name": "Stolberger",
     "ticker": "SZI1",
     "wkn": "727901",
     "isin": "DE0007279010",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0007279010.png"
+    "type": "stock"
   },
   {
     "name": "Northern Data",
     "ticker": "NB2",
     "wkn": "A0SMU8",
     "isin": "DE000A0SMU87",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A0SMU87.png"
+    "type": "stock"
   },
   {
     "name": "Aap Implantate",
     "ticker": "AAQ1",
     "wkn": "A3H210",
     "isin": "DE000A3H2101",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A3H2101.png"
+    "type": "stock"
   },
   {
     "name": "q beyond",
     "ticker": "QBY",
     "wkn": "513700",
     "isin": "DE0005137004",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE0005137004.png"
+    "type": "stock"
   },
   {
     "name": "New Wave Holding",
     "ticker": "SPOR",
     "wkn": "A3C7TZ",
     "isin": "CA44486R1010",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/CA44486R1010.png"
+    "type": "stock"
   },
   {
     "name": "Suss Microtec",
     "ticker": "SMHN",
     "wkn": "A1K023",
     "isin": "DE000A1K0235",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A1K0235.png"
+    "type": "stock"
   },
   {
     "name": "Intershop Comm",
     "ticker": "ISHA",
     "wkn": "A25421",
     "isin": "DE000A254211",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/DE000A254211.png"
+    "type": "stock"
   },
   {
     "name": "HERTZ GLOBAL HLDGS EQY WARRANT",
     "ticker": "HTZWW",
     "wkn": "A3C7UA",
     "isin": "US42804L2097",
-    "type": "derivative",
-    "logo_url": "https://assets.getquin.com/logos/US42804L2097.png"
+    "type": "derivative"
   },
   {
     "name": "Ecograf",
     "ticker": "EGR",
     "wkn": "A2PW0M",
     "isin": "AU0000071482",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/AU0000071482.png"
+    "type": "stock"
   },
   {
     "name": "MicroVision",
     "ticker": "MVIS",
     "wkn": "A0LNTJ",
     "isin": "US5949724083",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US5949724083.png"
+    "type": "stock"
   },
   {
     "name": "iRobot",
     "ticker": "IRBT",
     "wkn": "A0F5CC",
     "isin": "US4627681009",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US4627681009.png"
+    "type": "stock"
   },
   {
     "name": "Northern Dyn",
     "ticker": "NDM",
     "wkn": "A0J3T2",
     "isin": "CA66510M2040",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/CA66510M2040.png"
+    "type": "stock"
   },
   {
     "name": "Jaguar Mining",
     "ticker": "JAG",
     "wkn": "A0MKJ5",
     "isin": "CA47009M8896",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/CA47009M8896.png"
+    "type": "stock"
   },
   {
     "name": "Adx Energy",
     "ticker": "ADX",
     "wkn": "A0D9X9",
     "isin": "AU000000ADX9",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/AU000000ADX9.png"
+    "type": "stock"
   },
   {
     "name": "Virgin Galactic",
     "ticker": "SPCE",
     "wkn": "A2PTSJ",
     "isin": "US92766K1060",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US92766K1060.png"
+    "type": "stock"
   },
   {
     "name": "Tianbao Holdings Ltd.",
     "ticker": "3TB1",
     "wkn": "A3C7UB",
     "isin": "BMG887252085",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/BMG887252085.png"
+    "type": "stock"
   },
   {
     "name": "Immune Pharma",
     "ticker": "FZRQ",
     "wkn": "A1JKS1",
     "isin": "US45262C1062",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US45262C1062.png"
+    "type": "stock"
   },
   {
     "name": "Nel",
     "ticker": "NEL",
     "wkn": "A0B733",
     "isin": "NO0010081235",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/NO0010081235.png"
+    "type": "stock"
   },
   {
     "name": "Netcents Tech",
     "ticker": "NC",
     "wkn": "A2N4L8",
     "isin": "CA64112G1054",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/CA64112G1054.png"
+    "type": "stock"
   },
   {
     "name": "Rosneft Oil Company GDR",
     "ticker": "ROSN",
     "wkn": "A0D9XA",
     "isin": "US67812M2070",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US67812M2070.png"
+    "type": "stock"
   },
   {
     "name": "Sberbank Russia Sponsored ADR representing 4",
     "ticker": "SBRCY",
     "wkn": "A0ER6S",
     "isin": "US80585Y3080",
-    "type": "stock",
-    "logo_url": "https://assets.getquin.com/logos/US80585Y3080.png"
+    "type": "stock"
   }
 ]
