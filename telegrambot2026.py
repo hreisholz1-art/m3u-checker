@@ -50,9 +50,22 @@ async def lifespan(app: FastAPI):
     await bot_app.start()
     app.state.tg_app = bot_app
     
-    logger.info(f"✅ Bot started | Webhook: {WEBHOOK_URL or 'Polling'}")
+    # Установка webhook для Telegram
+    if WEBHOOK_URL:
+        await bot_app.bot.set_webhook(
+            url=WEBHOOK_URL,
+            allowed_updates=["message"],
+            drop_pending_updates=True
+        )
+        logger.info(f"✅ Webhook set: {WEBHOOK_URL}")
+    else:
+        logger.info("✅ Bot started in polling mode")
+    
     yield
     
+    # Удаление webhook при остановке
+    if WEBHOOK_URL:
+        await bot_app.bot.delete_webhook()
     await bot_app.stop()
     await bot_app.shutdown()
 
@@ -64,8 +77,19 @@ async def webhook(request: Request):
     await app.state.tg_app.process_update(Update.de_json(data, app.state.tg_app.bot))
     return Response(status_code=200)
 
+@app.get("/")
+def root():
+    """Root endpoint - zeigt Bot Status"""
+    return {
+        "status": "running",
+        "service": "Telegram Bot 2026",
+        "features": ["M3U processing", "Finance tracking"],
+        "webhook": WEBHOOK_URL or "polling mode"
+    }
+
 @app.get("/health")
 def health():
+    """Health check für Render"""
     return {"status": "ok"}
 
 if __name__ == "__main__":
