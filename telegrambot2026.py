@@ -26,14 +26,31 @@ async def route_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
     
-    response = await finance_handler.handle_finance_command(update.message.text)
+    text = update.message.text.strip()
+    logger.info(f"📝 Text received: {text[:50]}...")
+    
+    response = await finance_handler.handle_finance_command(text)
     if response:
+        logger.info(f"✅ Finance response sent")
         await update.message.reply_html(response)
+    else:
+        logger.info(f"❌ Command not recognized")
+        await update.message.reply_text(
+            "❓ Команда не распознана.\n\n"
+            "📊 Финансовые команды:\n"
+            "<code>/mysecret</code> - помощь\n"
+            "<code>wkn123456 50euro</code>\n"
+            "<code>del02.06</code>",
+            parse_mode="HTML"
+        )
 
 async def route_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Роутер для документов → m3u_handler"""
     if not update.message or not update.message.document:
         return
+    
+    file_name = update.message.document.file_name or "unknown"
+    logger.info(f"📎 Document received: {file_name}")
     
     await m3u_handler.process_m3u_document(update, context)
 
