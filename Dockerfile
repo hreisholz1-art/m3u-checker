@@ -7,12 +7,13 @@ RUN apt-get update && \
         tesseract-ocr \
         tesseract-ocr-deu \
         tesseract-ocr-eng \
-        libgl1 \
+        libgl1-mesa-glx \
         libglib2.0-0 \
         libsm6 \
         libxext6 \
-        libxrender-dev \
+        libxrender1 \
         libgomp1 \
+        libgthread-2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
