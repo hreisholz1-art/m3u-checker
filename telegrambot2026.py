@@ -553,6 +553,15 @@ async def lifespan(app: FastAPI):
     application = Application.builder().token(BOT_TOKEN).build()
     await application.initialize()
     await application.start()
+
+        # Установка webhook после старта
+        webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{WEBHOOK_SECRET}"
+    await application.bot.set_webhook(
+                url=webhook_url,
+                secret_token=WEBHOOK_SECRET,
+                drop_pending_updates=True   # очень полезно при перезапусках
+            )
+    logger.info(f"Webhook установлен на: {webhook_url}")
     
     # Handlers
     application.add_handler(CommandHandler("start", start))
