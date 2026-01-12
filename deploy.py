@@ -1,45 +1,48 @@
-"""
-DEPLOY.PY - Production configuration for Render
-This file contains all environment-specific settings for deployment.
-"""
-
+# deploy.py
 import os
+import logging
+from contextlib import asynccontextmanager
+from telegram.ext import Application
+from telegrambot2026 import config, init_db, load_wkn_json, create_app
+from telegrambot2026 import start, handle_document, handle_hidden_commands, download_excel
+from telegram.ext import CommandHandler, MessageHandler, filters
 
-# ===== RENDER PRODUCTION SETTINGS =====
-# These settings are optimized for Render deployment
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Bot configuration
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "production-secret-key-2026")
+# ─────────────── НАСТРОЙКА ДЛЯ RENDER ───────────────
+config.BOT_TOKEN = os.getenv("BOT_TOKEN")
+config.WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "change-me-very-secure-secret-2026")
+config.GOOGLE_CREDENTIALS_BASE64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
 
-# Google Sheets integration
-GOOGLE_CREDENTIALS_BASE64 = os.getenv("GOOGLE_CREDENTIALS_BASE64")
+if not config.BOT_TOKEN:
+    raise ValueError("BOT_TOKEN не задан")
 
-# Webhook URL (Render provides this automatically)
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
+# ─────────────── LIFESPAN ───────────────
+@asynccontextmanager
+async def lifespan(app):
+    init_db()
+    load_wkn_json()
+    bot_app = Application.builder().token(config.BOT_TOKEN).build()
+    await bot_app.initialize()
+    await bot_app.start()
+    
+    bot_app.add_handler(CommandHandler("start", start))
+    bot_app.add_handler(CommandHandler("divxlsx", download_excel))
+    bot_app.add_handler(CommandHandler("mysecret", handle_hidden_commands))
+    bot_app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
+    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_hidden_commands))
+    
+    app.state.tg_app = bot_app
+    yield
+    await bot_app.stop()
+    await bot_app.shutdown()
 
-# Application settings
-WEBHOOK_PATH = f"/webhook/{WEBHOOK_SECRET}"
-WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}{WEBHOOK_PATH}" if RENDER_EXTERNAL_URL else None
+# ─────────────── ЗАПУСК ───────────────
+app = create_app(Application.builder().token(config.BOT_TOKEN).build())
+app.router.lifespan_context = lifespan
 
-# Logging level for production
-LOG_LEVEL = "INFO"
-
-# Security settings
-ALLOWED_USER_IDS = os.getenv("ALLOWED_USER_IDS", "").split(",") if os.getenv("ALLOWED_USER_IDS") else []
-
-# M3U combiner settings (reduced for production safety)
-M3U_MAX_WORKERS = 4
-M3U_TIMEOUT_SECONDS = 10
-
-# Validation
-if not BOT_TOKEN:
-    raise ValueError("❌ BOT_TOKEN environment variable is required!")
-
-if not GOOGLE_CREDENTIALS_BASE64:
-    print("⚠️  GOOGLE_CREDENTIALS_BASE64 not set. Finance features will be disabled.")
-
-print("✅ Deploy configuration loaded successfully")
-print(f"   - Bot Token: {'✓' if BOT_TOKEN else '✗'}")
-print(f"   - Google Sheets: {'✓' if GOOGLE_CREDENTIALS_BASE64 else '✗ (finance disabled)'}")
-print(f"   - Webhook URL: {WEBHOOK_URL[:50] + '...' if WEBHOOK_URL and len(WEBHOOK_URL) > 50 else WEBHOOK_URL}")
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
