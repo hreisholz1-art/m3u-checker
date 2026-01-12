@@ -26,6 +26,11 @@ async def process_m3u_document(update, context):
     doc = update.message.document
     file_name = doc.file_name or "input.m3u"
     
+    # ВАЖНО: Игнорируем ZIP файлы от бота
+    if file_name.lower().endswith('.zip'):
+        logger.info(f"Ignoring ZIP file: {file_name}")
+        return
+    
     # Валидация расширения
     if not any(file_name.lower().endswith(ext) for ext in ALLOWED_EXTENSIONS):
         await update.message.reply_text(
