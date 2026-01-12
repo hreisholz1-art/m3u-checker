@@ -257,8 +257,7 @@ def add_dividend_to_sheets(date: str, wkn: str, name: str, amount: float, logo_u
         data_row = last_row + 1
         sum_row = data_row + 1
 
-        sheet.update(f"A{data_row}", [[date, logo_url, wkn, name, amount]])
-        
+        sheet.update(f"A{data_row}", [[date, '', name, wkn, amount]])        
         # Цвет
         color = get_color_for_wkn(wkn)
         sheet.format(f"A{data_row}:E{data_row}", {"backgroundColor": color})
