@@ -1,20 +1,27 @@
 FROM python:3.11-slim
 
-# Установка FFmpeg
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    git \
+    ffmpeg \
+    tesseract-ocr \
+    tesseract-ocr-deu \
+    tesseract-ocr-eng \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libxcb1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Установка зависимостей
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Копирование кода приложения
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-EXPOSE 10000
+RUN ffmpeg -version && tesseract --version
 
-CMD ["uvicorn", "telegrambot2026:app", "--host", "0.0.0.0", "--port", "10000"]
+EXPOSE 8000
+CMD ["python", "telegrambot2026.py"]
