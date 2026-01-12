@@ -67,16 +67,20 @@ def init_db():
             year INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    """)    conn.commit()
+        """)
+        conn.commit()
+    conn.close()
 
         c.execute("""
         CREATE TABLE IF NOT EXISTS wkn_lookup (
+            
             code TEXT PRIMARY KEY,
             name TEXT NOT NULL
         )
-    """)
+            """)
+    conn.commit()
     conn.close()
-
+    
 def delete_dividends_by_date(date: str, year: int = None):
     """Удалить записи по дате из БД"""
     if year is None:
