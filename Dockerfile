@@ -1,18 +1,20 @@
 FROM python:3.11-slim
 
-# Установка FFmpeg для обработки M3U
+# Установка FFmpeg
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Установка Python-зависимостей
+# Обновление pip
+RUN pip install --upgrade pip
+
+# Установка зависимостей
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Копирование кода приложения
+# Копирование кода
 COPY . .
 
 EXPOSE 10000
