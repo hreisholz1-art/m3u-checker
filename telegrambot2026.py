@@ -1,114 +1,43 @@
-"""
-telegrambot2026.py - ТОЛЬКО роутинг и FastAPI
-Никакой бизнес-логики! Только маршрутизация.
-"""
-import os
 import logging
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response
-from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from aiogram import Bot, Dispatcher, Router, F, types
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiohttp import web
+from deploy import BOT_TOKEN, WEBHOOK_SECRET
+from finance_handler import handle_finance_command
+from m3u_handler import handle_m3u_document
 
-import m3u_handler
-import finance_handler
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "very-secret")
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
-WEBHOOK_PATH = f"/webhook/{WEBHOOK_SECRET}"
-WEBHOOK_URL = f"{RENDER_EXTERNAL_URL}{WEBHOOK_PATH}" if RENDER_EXTERNAL_URL else None
+# Инициализация
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+router = Router()
 
-async def route_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Роутер для текстовых сообщений → finance_handler"""
-    if not update.message or not update.message.text:
-        return
-    
-    text = update.message.text.strip()
-    logger.info(f"📝 Text received: {text[:50]}...")
-    
-    response = await finance_handler.handle_finance_command(text)
+# Хендлер для текстовых сообщений
+@router.message(F.text)
+async def handle_text(message: types.Message):
+    logger.info(f"Получено текстовое сообщение: {message.text}")
+    response = handle_finance_command(message.text)
     if response:
-        logger.info(f"✅ Finance response sent")
-        await update.message.reply_html(response)
-    else:
-        logger.info(f"❌ Command not recognized")
-        await update.message.reply_text(
-            "❓ Команда не распознана.\n\n"
-            "📊 Финансовые команды:\n"
-            "<code>/mysecret</code> - помощь\n"
-            "<code>wkn123456 50euro</code>\n"
-            "<code>del02.06</code>",
-            parse_mode="HTML"
-        )
+        await message.answer(response)
 
-async def route_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Роутер для документов → m3u_handler"""
-    if not update.message or not update.message.document:
-        return
-    
-    file_name = update.message.document.file_name or "unknown"
-    logger.info(f"📎 Document received: {file_name}")
-    
-    await m3u_handler.process_m3u_document(update, context)
+# Хендлер для документов
+@router.message(F.document)
+async def handle_document(message: types.Message):
+    await handle_m3u_document(message)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Жизненный цикл бота"""
-    bot_app = Application.builder().token(TOKEN).build()
-    
-    # ПОРЯДОК ВАЖЕН: сначала TEXT, потом Document
-    bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, route_text))
-    bot_app.add_handler(MessageHandler(filters.Document.ALL, route_document))
-    
-    await bot_app.initialize()
-    await bot_app.start()
-    app.state.tg_app = bot_app
-    
-    # Установка webhook для Telegram
-    if WEBHOOK_URL:
-        await bot_app.bot.set_webhook(
-            url=WEBHOOK_URL,
-            allowed_updates=["message"],
-            drop_pending_updates=True
-        )
-        logger.info(f"✅ Webhook set: {WEBHOOK_URL}")
-    else:
-        logger.info("✅ Bot started in polling mode")
-    
-    yield
-    
-    # Удаление webhook при остановке
-    if WEBHOOK_URL:
-        await bot_app.bot.delete_webhook()
-    await bot_app.stop()
-    await bot_app.shutdown()
+# Подключение роутера
+dp.include_router(router)
 
-app = FastAPI(lifespan=lifespan)
+# FastAPI приложение
+app = web.Application()
+SimpleRequestHandler(dp, bot).register(app, path=f"/webhook/{WEBHOOK_SECRET}")
 
-@app.post(f"/webhook/{WEBHOOK_SECRET}")
-async def webhook(request: Request):
-    data = await request.json()
-    await app.state.tg_app.process_update(Update.de_json(data, app.state.tg_app.bot))
-    return Response(status_code=200)
+# Установка вебхука при старте
+async def on_startup():
+    await bot.set_webhook(f"https://m3u-checker-ccpf.onrender.com/webhook/{WEBHOOK_SECRET}")
+    logger.info("Вебхук установлен")
 
-@app.get("/")
-def root():
-    """Root endpoint - zeigt Bot Status"""
-    return {
-        "status": "running",
-        "service": "Telegram Bot 2026",
-        "features": ["M3U processing", "Finance tracking"],
-        "webhook": WEBHOOK_URL or "polling mode"
-    }
-
-@app.get("/health")
-def health():
-    """Health check für Render"""
-    return {"status": "ok"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
+app.on_startup.append(on_startup)
