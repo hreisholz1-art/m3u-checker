@@ -58,10 +58,23 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("""
-        INSERT INTO dividends (date, wkn, name, amount, year)
-VALUES (?, ?, ?, ?, ?)
-    """, (date, wkn, name, amount, year))
-    conn.commit()
+        CREATE TABLE IF NOT EXISTS dividends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            wkn TEXT NOT NULL,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            year INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)    conn.commit()
+
+        c.execute("""
+        CREATE TABLE IF NOT EXISTS wkn_lookup (
+            code TEXT PRIMARY KEY,
+            name TEXT NOT NULL
+        )
+    """)
     conn.close()
 
 def delete_dividends_by_date(date: str, year: int = None):
